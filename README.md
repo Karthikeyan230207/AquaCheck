@@ -1,0 +1,569 @@
+# 💧 AquaCheck
+
+### Intelligent Water Quality Report Analysis Platform
+
+AquaCheck is a software platform that transforms complex **water quality reports** into clear, understandable, and actionable insights.
+
+Users can upload a water quality report in **PDF or image format**, and AquaCheck extracts the available parameters, validates and analyzes the data against selected reference standards, visualizes the results, and provides easy-to-understand explanations.
+
+The platform combines **document processing, OCR, data analytics, rule-based water quality assessment, and open-source AI** to simplify the interpretation of water quality reports.
+
+---
+
+## 🚀 Problem
+
+Water quality reports often contain technical parameters, numerical values, units, and reference limits that can be difficult for ordinary users to understand.
+
+A user may receive a report containing values such as:
+
+```text
+pH          : 7.8
+TDS         : 320 mg/L
+Hardness    : 180 mg/L
+Chloride    : 120 mg/L
+```
+
+However, simply displaying these numbers does not clearly communicate:
+
+* What each parameter means
+* Whether the reported value is within the selected reference range
+* Which parameters require attention
+* How the results have changed over time
+* What the overall report indicates
+
+AquaCheck addresses this gap by converting technical report data into a structured and understandable digital analysis.
+
+---
+
+## 💡 Our Solution
+
+AquaCheck follows a simple workflow:
+
+```text
+Water Quality Report
+        ↓
+   Upload PDF/Image
+        ↓
+   Text / Table Extraction
+        ↓
+       OCR if needed
+        ↓
+ Parameter Identification
+        ↓
+ Data Validation & Normalization
+        ↓
+ AquaCheck Analysis Engine
+        ↓
+ Reference Standard Comparison
+        ↓
+ Results & Visualization
+        ↓
+ AI-Powered Explanation
+        ↓
+ Recommendations & History
+```
+
+The core water-quality assessment is performed using a **deterministic analysis engine**, while the AI layer is used to explain the technical results in a more understandable form.
+
+---
+
+# ✨ Key Features
+
+## 📄 1. Water Quality Report Upload
+
+Users can upload water quality reports in supported formats such as:
+
+* PDF
+* JPG
+* PNG
+* Scanned documents
+
+---
+
+## 🔍 2. Automatic Data Extraction
+
+AquaCheck extracts available water-quality information from uploaded reports.
+
+Potential parameters include:
+
+* pH
+* TDS
+* Turbidity
+* Total Hardness
+* Chloride
+* Fluoride
+* Nitrate
+* Iron
+* Other available parameters
+
+The system is designed to handle both digitally generated and scanned reports.
+
+---
+
+## 🧠 3. Intelligent Parameter Processing
+
+Extracted information is converted into structured data.
+
+Example:
+
+```json
+{
+  "parameter": "pH",
+  "value": 7.8,
+  "unit": null
+}
+```
+
+The processing pipeline performs:
+
+* Data cleaning
+* Unit normalization
+* Parameter identification
+* Type validation
+* Missing-value handling
+
+---
+
+## 📊 4. Water Quality Analysis
+
+AquaCheck compares extracted values against the selected reference standards.
+
+Example:
+
+```text
+Parameter : pH
+Value     : 8.7
+Reference : 6.5 – 8.5
+
+Result    : Above Reference Range
+```
+
+The analysis engine is designed to provide consistent and reproducible results rather than relying on an AI model to make the underlying numerical decision.
+
+---
+
+## 🤖 5. Open-Source AI Explanation
+
+AquaCheck can use an open-source language model from **Hugging Face** to convert technical analysis results into understandable explanations.
+
+For example:
+
+### Technical Result
+
+```text
+pH = 8.7
+Status = Above Reference Range
+```
+
+### AI Explanation
+
+> The reported pH is above the selected reference range, indicating that the sample is more alkaline than the reference value.
+
+The AI layer is separated from the core analysis engine so that the numerical assessment remains controlled and explainable.
+
+---
+
+## 📈 6. Interactive Dashboard
+
+The dashboard is designed to present:
+
+* Overall report summary
+* Parameter values
+* Reference ranges
+* Status indicators
+* Charts
+* Historical trends
+* AI explanations
+* Recommendations
+
+The goal is to make technical water-quality information easier to understand at a glance.
+
+---
+
+## 📚 7. Report History
+
+Users can maintain a history of their uploaded reports.
+
+This enables:
+
+* Previous report viewing
+* Historical comparison
+* Parameter trend analysis
+* Long-term monitoring
+
+---
+
+## 🔐 8. Secure User Accounts
+
+AquaCheck uses **Supabase Authentication** for user management.
+
+Each user's reports and analysis data can be associated with their authenticated account.
+
+Supabase Row Level Security can be used to ensure users access only the data they are authorized to access.
+
+---
+
+# 🏗️ System Architecture
+
+```text
+                         ┌──────────────────────┐
+                         │        USER          │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │    Next.js Frontend  │
+                         │                      │
+                         │ Dashboard            │
+                         │ Upload               │
+                         │ Reports              │
+                         │ Charts               │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │    FastAPI Backend   │
+                         └──────────┬───────────┘
+                                    │
+                    ┌───────────────┼────────────────┐
+                    │               │                │
+                    ▼               ▼                ▼
+             ┌────────────┐  ┌────────────┐  ┌──────────────┐
+             │ PDF        │  │ OCR        │  │ Data         │
+             │ Extraction │  │ Processing │  │ Processing   │
+             └─────┬──────┘  └─────┬──────┘  └──────┬───────┘
+                   │               │                 │
+                   └───────────────┼─────────────────┘
+                                   ▼
+                         ┌──────────────────────┐
+                         │ Parameter Processing │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │ AquaCheck Analysis   │
+                         │ Engine               │
+                         │                      │
+                         │ Standards            │
+                         │ Rules                │
+                         │ Scoring              │
+                         └──────────┬───────────┘
+                                    │
+                         ┌──────────┴───────────┐
+                         │                      │
+                         ▼                      ▼
+                ┌─────────────────┐    ┌─────────────────┐
+                │   Supabase      │    │ Hugging Face   │
+                │                 │    │ AI Model       │
+                │ PostgreSQL      │    │                 │
+                │ Authentication  │    │ Explanation     │
+                │ Storage         │    │ Generation      │
+                └────────┬────────┘    └────────┬────────┘
+                         │                      │
+                         └──────────┬───────────┘
+                                    ▼
+                         ┌──────────────────────┐
+                         │   AquaCheck Result   │
+                         │                      │
+                         │ Analysis             │
+                         │ Visualization        │
+                         │ Explanation          │
+                         └──────────────────────┘
+```
+
+---
+
+# 🛠️ Technology Stack
+
+| Technology                    | Purpose                                              |
+| ----------------------------- | ---------------------------------------------------- |
+| **Next.js**                   | Frontend web application                             |
+| **React**                     | Interactive UI components                            |
+| **CSS**                       | Responsive and customized interface                  |
+| **FastAPI**                   | Python backend and REST APIs                         |
+| **Python**                    | Data processing and AI/ML pipeline                   |
+| **Supabase**                  | Authentication, PostgreSQL database and file storage |
+| **PostgreSQL**                | Structured application and report data               |
+| **PyMuPDF**                   | PDF text extraction                                  |
+| **Tesseract / EasyOCR**       | OCR for scanned reports                              |
+| **Pandas**                    | Data cleaning and transformation                     |
+| **Pydantic**                  | Data validation                                      |
+| **Hugging Face Transformers** | Open-source AI model integration                     |
+| **PyTorch**                   | Machine-learning model execution                     |
+| **Recharts**                  | Data visualization                                   |
+| **Git & GitHub**              | Version control and collaboration                    |
+
+---
+
+# 📁 Project Structure
+
+```text
+AquaCheck/
+│
+├── frontend/                  # Next.js application
+│   ├── public/
+│   └── src/
+│       ├── app/
+│       ├── components/
+│       ├── hooks/
+│       ├── lib/
+│       └── styles/
+│
+├── backend/                   # FastAPI + Python
+│   ├── app/
+│   │   ├── api/
+│   │   ├── extraction/
+│   │   ├── analysis/
+│   │   ├── ai/
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   └── config/
+│   │
+│   └── tests/
+│
+├── supabase/
+│   ├── migrations/
+│   └── seed.sql
+│
+├── datasets/
+│   ├── sample_reports/
+│   ├── extracted_data/
+│   └── test_cases/
+│
+├── docs/
+│   ├── architecture.md
+│   ├── api.md
+│   ├── database.md
+│   └── project-flow.md
+│
+├── .gitignore
+├── README.md
+└── LICENSE
+```
+
+---
+
+# 🔄 Data Processing Pipeline
+
+AquaCheck processes a report through multiple stages.
+
+### Step 1 — Upload
+
+```text
+PDF / Image
+```
+
+### Step 2 — Document Processing
+
+```text
+PDF
+ ↓
+PyMuPDF
+
+Scanned Image
+ ↓
+OCR
+```
+
+### Step 3 — Parameter Extraction
+
+```text
+Raw Text
+ ↓
+Parameter Parser
+ ↓
+Structured Parameters
+```
+
+### Step 4 — Validation
+
+```text
+Structured Data
+ ↓
+Pydantic
+ ↓
+Validated Data
+```
+
+### Step 5 — Normalization
+
+```text
+Different formats / units
+ ↓
+Standardized representation
+```
+
+### Step 6 — Analysis
+
+```text
+Parameter
+   +
+Value
+   +
+Unit
+   ↓
+Reference Standard
+   ↓
+Comparison
+```
+
+### Step 7 — AI Explanation
+
+```text
+Analysis Result
+      ↓
+Hugging Face Model
+      ↓
+Natural Language Explanation
+```
+
+### Step 8 — Visualization
+
+```text
+Analysis
+   ↓
+Dashboard
+   ↓
+Charts + Status + Explanation
+```
+
+---
+
+# 🧠 AquaCheck Intelligence
+
+AquaCheck separates **analysis** from **AI explanation**.
+
+```text
+                AQUACHECK INTELLIGENCE
+                         │
+             ┌───────────┴───────────┐
+             │                       │
+       ANALYSIS ENGINE          AI ENGINE
+             │                       │
+       Rule-based logic       Hugging Face Model
+             │                       │
+       Standards comparison   Natural-language
+             │                 explanation
+             │                       │
+             └───────────┬───────────┘
+                         ▼
+                  Final User Result
+```
+
+This architecture helps maintain consistency in the core numerical assessment while using AI to improve the user's understanding of the results.
+
+---
+
+# 🎯 Target Users
+
+AquaCheck is designed for anyone who receives or manages water-quality reports, including:
+
+* 🏠 Households
+* 🏢 Apartments and residential communities
+* 🏫 Schools and colleges
+* 🏨 Hotels
+* 🍽️ Restaurants
+* 🏥 Institutions
+* 🏢 Offices
+* 🏭 Businesses
+* 💧 Water management teams
+* 🏘️ Property and facility managers
+
+The platform is not restricted to a specific income group or type of water user.
+
+---
+
+# 🌟 Key Advantages
+
+### 📄 Report-Centric
+
+Works from existing water-quality reports rather than requiring specialized hardware.
+
+### 🧠 Explainable Analysis
+
+The core assessment uses explicit comparison and analysis rules.
+
+### 🤖 Open-Source AI
+
+Uses Hugging Face models rather than requiring dependence on a commercial generative-AI API for explanations.
+
+### 📊 Data Visualization
+
+Converts numerical report information into understandable visual representations.
+
+### 🔐 Secure Data Management
+
+Uses Supabase authentication, database security and storage capabilities.
+
+### 📈 Historical Tracking
+
+Allows users to understand changes across multiple reports.
+
+### ♻️ Scalable Architecture
+
+The modular architecture allows additional parameters, report formats and analysis capabilities to be added later.
+
+---
+
+
+# 🔒 Data & AI Design Principles
+
+AquaCheck follows these principles:
+
+1. **The AI model should not be the sole source of numerical decisions.**
+2. **Extracted values should be validated before analysis.**
+3. **Reference standards should be explicitly identified.**
+4. **AI-generated explanations should be based on structured analysis results.**
+5. **User reports should be protected through authentication and database security.**
+6. **The system should clearly distinguish measured values from interpretations.**
+
+---
+
+# 📌 Project Status
+
+> 🚧 **AquaCheck is currently under active development.**
+
+The project architecture and technology stack are being implemented incrementally, beginning with the frontend, backend, Supabase integration, report processing pipeline, and water-quality analysis engine.
+
+---
+
+# 🤝 Contributing
+
+Contributions and suggestions are welcome.
+
+```bash
+# Clone the repository
+git clone <repository-url>
+
+# Move into the project
+cd AquaCheck
+
+# Create a feature branch
+git checkout -b feature/your-feature
+
+# Make your changes
+git add .
+
+# Commit
+git commit -m "Add: your feature"
+
+# Push
+git push origin feature/your-feature
+```
+
+Create a pull request after completing your changes.
+
+---
+
+# 📄 License
+
+This project is currently developed for educational and research purposes.
+
+License details will be added as the project progresses.
+
+---
+
+## 💧 AquaCheck
+
+### **Understand Your Water. Understand Your Report.**
