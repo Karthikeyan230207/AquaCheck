@@ -1,0 +1,67 @@
+.form {
+  display: grid;
+  gap: 10px;
+}
+
+.form label {
+  margin-top: 8px;
+  color: #254a3f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.form input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cbded5;
+  border-radius: 8px;
+  background: #fff;
+  color: #183b34;
+  font: inherit;
+}
+
+.form input:focus {
+  border-color: #38846e;
+  outline: 3px solid #dff2e9;
+}
+
+.form button {
+  min-height: 46px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 9px;
+  background: #28725d;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+}
+
+.form button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.error,
+.message {
+  padding: 11px 13px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.error {
+  background: #fff1ee;
+  color: #9c3729;
+}
+
+.message {
+  background: #edf8f1;
+  color: #287345;
+}
+
+.switchLink {
+  margin-top: 8px;
+  font-size: 13px;
+}

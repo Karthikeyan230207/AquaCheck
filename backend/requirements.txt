@@ -6,7 +6,7 @@ pydantic-settings
 python-dotenv
 pymupdf
 pandas
-supabase
+pymongo
 transformers
 torch
 pytest

@@ -1,0 +1,50 @@
+.list {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 16px;
+  border: 1px solid #e2ece7;
+  border-radius: 10px;
+  background: #fbfdfc;
+}
+
+.item a {
+  color: #205f4d;
+  font-size: 14px;
+}
+
+.item p {
+  margin-top: 4px;
+  color: #82918b;
+  font-size: 12px;
+}
+
+.item > strong {
+  flex: 0 0 auto;
+  color: #28725d;
+  font-size: 13px;
+}
+
+.error {
+  color: #9c3729;
+  overflow-wrap: anywhere;
+}
+
+.newReport {
+  margin-top: 18px;
+}
+
+@media (max-width: 480px) {
+  .item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

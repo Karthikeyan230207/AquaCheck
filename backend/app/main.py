@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.ai import router as ai_router
 from app.api.analysis import router as analysis_router
 from app.api.reports import router as reports_router
+from app.config.settings import settings
 
 
 app = FastAPI(
@@ -13,7 +14,11 @@ app = FastAPI(
 )
 app.add_middleware(
 	CORSMiddleware,
-	allow_origins=["http://localhost:3000"],
+	allow_origins=[
+		origin.strip()
+		for origin in settings.frontend_origins.split(",")
+		if origin.strip()
+	],
 	allow_credentials=True,
 	allow_methods=["GET", "POST"],
 	allow_headers=["*"],

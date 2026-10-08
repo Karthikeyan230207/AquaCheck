@@ -197,9 +197,9 @@ This enables:
 
 AquaCheck uses **Supabase Authentication** for user management.
 
-Each user's reports and analysis data can be associated with their authenticated account.
-
-Supabase Row Level Security can be used to ensure users access only the data they are authorized to access.
+Each user's reports and analysis data are stored in **MongoDB Atlas** under
+the user ID verified by the backend. The Atlas connection string is kept
+server-side and report queries are scoped to that identity.
 
 ---
 
@@ -253,15 +253,24 @@ Supabase Row Level Security can be used to ensure users access only the data the
                          │                      │
                          ▼                      ▼
                 ┌─────────────────┐    ┌─────────────────┐
-                │   Supabase      │    │ Hugging Face   │
-                │                 │    │ AI Model       │
-                │ PostgreSQL      │    │                 │
-                │ Authentication  │    │ Explanation     │
-                │ Storage         │    │ Generation      │
-                └────────┬────────┘    └────────┬────────┘
-                         │                      │
-                         └──────────┬───────────┘
-                                    ▼
+                │ MongoDB Atlas   │    │ Hugging Face   │
+                │ Saved reports   │    │ AI Model       │
+                │ and analysis    │    │ Explanation     │
+                └─────────────────┘    │ generation     │
+                            └─────────────────┘
+                         ┌─────────────────┐
+                         │ Supabase Auth   │
+                         │ Identity only   │
+                         └────────┬────────┘
+                                  │
+                                  ▼
+                         ┌─────────────────┐
+                         │ FastAPI verifies│
+                         │ access tokens   │
+                         └────────┬────────┘
+                                  │
+                                  └───────────┐
+                                   ▼
                          ┌──────────────────────┐
                          │   AquaCheck Result   │
                          │                      │
@@ -282,8 +291,8 @@ Supabase Row Level Security can be used to ensure users access only the data the
 | **CSS**                       | Responsive and customized interface                  |
 | **FastAPI**                   | Python backend and REST APIs                         |
 | **Python**                    | Data processing and AI/ML pipeline                   |
-| **Supabase**                  | Authentication, PostgreSQL database and file storage |
-| **PostgreSQL**                | Structured application and report data               |
+| **Supabase Auth**             | Email/password identity and access tokens            |
+| **MongoDB Atlas**             | Managed cloud database for report analysis history   |
 | **PyMuPDF**                   | PDF text extraction                                  |
 | **Tesseract / EasyOCR**       | OCR for scanned reports                              |
 | **Pandas**                    | Data cleaning and transformation                     |
@@ -428,6 +437,25 @@ Dashboard
 Charts + Status + Explanation
 ```
 
+### Current MVP support
+
+`POST /api/reports/analyze` connects the text-based PDF steps: upload, embedded
+text extraction, supported measurement parsing, validation, and deterministic
+analysis. The frontend's `/upload` page displays the extracted measurements,
+classifications, score, and recommendations. The upload is processed in
+memory and is not saved. Scanned PDFs and image OCR are not available until an
+OCR provider is configured. See [docs/api.md](docs/api.md) for the endpoint
+request and response details.
+
+Supabase email/password authentication and MongoDB Atlas per-user report
+history are available when configured. Copy the environment templates and set
+the backend Atlas/Supabase credentials and frontend public Supabase/API URLs
+as described in [docs/database.md](docs/database.md). The API verifies each
+Supabase access token and only returns or saves reports for that authenticated
+user. Atlas stores analysis results and report metadata, not uploaded PDF
+files. Atlas hosts the managed database; the frontend and API still need their
+own web hosting.
+
 ---
 
 # 🧠 AquaCheck Intelligence
@@ -494,7 +522,8 @@ Converts numerical report information into understandable visual representations
 
 ### 🔐 Secure Data Management
 
-Uses Supabase authentication, database security and storage capabilities.
+Uses Supabase Authentication for identity and MongoDB Atlas for saved report
+data. The API checks each access token and filters reports by the verified user.
 
 ### 📈 Historical Tracking
 

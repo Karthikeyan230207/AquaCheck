@@ -1,0 +1,61 @@
+.meta {
+  color: #82918b;
+  font-size: 12px;
+}
+
+.score {
+  margin-top: 14px;
+  color: #28725d;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.tableWrap {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th,
+.table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #edf2ef;
+  font-size: 13px;
+}
+
+.table th {
+  color: #748780;
+  font-size: 11px;
+}
+
+.status {
+  text-transform: capitalize;
+}
+
+.sectionTitle {
+  margin-top: 24px;
+  color: #254a3f;
+  font-size: 16px;
+}
+
+.recommendations {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding-left: 20px;
+  font-size: 13px;
+}
+
+.back {
+  margin-top: 22px;
+}
+
+.error {
+  color: #9c3729;
+  overflow-wrap: anywhere;
+}

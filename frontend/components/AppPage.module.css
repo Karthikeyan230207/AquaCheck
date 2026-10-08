@@ -1,0 +1,114 @@
+.page {
+  min-height: 100vh;
+  padding: 0 24px 80px;
+  background:
+    radial-gradient(ellipse at 10% 8%, #dff6ed 0, transparent 34%),
+    #f6faf8;
+  color: #183b34;
+}
+
+.header {
+  display: flex;
+  width: min(100%, 1100px);
+  min-height: 76px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto;
+  border-bottom: 1px solid #dceae4;
+}
+
+.brand {
+  color: #205f4d;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.navigation {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 22px;
+}
+
+.navigation a {
+  color: #526e65;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.navigation a:hover {
+  color: #205f4d;
+}
+
+.content {
+  width: min(100%, 760px);
+  margin: 80px auto 0;
+}
+
+.eyebrow {
+  margin-bottom: 10px;
+  color: #38846e;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.content h1 {
+  font-size: clamp(32px, 6vw, 48px);
+  letter-spacing: -0.04em;
+}
+
+.description {
+  max-width: 640px;
+  margin-top: 14px;
+  color: #5e746e;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.card {
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px solid #dceae4;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 40px rgb(28 72 58 / 7%);
+  color: #536b63;
+  line-height: 1.6;
+}
+
+.card p + p {
+  margin-top: 12px;
+}
+
+.card a {
+  color: #28725d;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 620px) {
+  .page {
+    padding: 0 16px 56px;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+    padding: 18px 0;
+  }
+
+  .navigation {
+    justify-content: flex-start;
+    gap: 12px 18px;
+  }
+
+  .content {
+    margin-top: 52px;
+  }
+}

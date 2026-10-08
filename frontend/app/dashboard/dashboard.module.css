@@ -1,0 +1,22 @@
+.checkButton {
+  margin-top: 4px;
+  padding: 10px 14px;
+  border: 1px solid #c7ded4;
+  border-radius: 8px;
+  background: #f5fbf8;
+  color: #205f4d;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.checkButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.error {
+  margin-top: 12px;
+  color: #9c3729;
+  font-size: 13px;
+}
