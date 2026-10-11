@@ -12,8 +12,33 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "AquaCheck | Water Report Analysis",
-  description: "Understand water quality measurements from your lab report.",
+  title: "AquaCheck | Water Quality Report Analysis & Screening",
+  description:
+    "Upload water quality lab reports to screen pH, TDS, turbidity, nitrate, iron, hardness, and contaminants with interactive 3D visualizations and standards-grounded analysis.",
+  keywords: [
+    "water quality",
+    "drinking water safety",
+    "water test analysis",
+    "pH",
+    "TDS",
+    "turbidity",
+    "water report scanner",
+  ],
+  authors: [{ name: "AquaCheck Team" }],
+  openGraph: {
+    title: "AquaCheck | Water Quality Report Analysis",
+    description:
+      "Screen and visualize water laboratory test reports in seconds against national and international drinking water guidelines.",
+    siteName: "AquaCheck",
+    type: "website",
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#256d58",
 };
 
 export default function RootLayout({ children }) {

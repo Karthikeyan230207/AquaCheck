@@ -7,7 +7,5 @@ python-dotenv
 pymupdf
 pandas
 pymongo
-transformers
-torch
 pytest
 httpx

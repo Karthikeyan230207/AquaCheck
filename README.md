@@ -142,9 +142,9 @@ The analysis engine is designed to provide consistent and reproducible results r
 
 ---
 
-## 🤖 5. Open-Source AI Explanation
+## 🧾 5. Rule-Based Explanation
 
-AquaCheck can use an open-source language model from **Hugging Face** to convert technical analysis results into understandable explanations.
+AquaCheck formats each reported measurement, status, and reference range into a concise plain-language explanation. It runs immediately on the backend without a downloaded model or external AI service.
 
 For example:
 
@@ -155,11 +155,11 @@ pH = 8.7
 Status = Above Reference Range
 ```
 
-### AI Explanation
+### Explanation
 
 > The reported pH is above the selected reference range, indicating that the sample is more alkaline than the reference value.
 
-The AI layer is separated from the core analysis engine so that the numerical assessment remains controlled and explainable.
+The explanation reuses the deterministic analysis results; it does not make new water-safety claims.
 
 ---
 
@@ -173,7 +173,7 @@ The dashboard is designed to present:
 * Status indicators
 * Charts
 * Historical trends
-* AI explanations
+* Plain-language explanations
 * Recommendations
 
 The goal is to make technical water-quality information easier to understand at a glance.
@@ -252,12 +252,11 @@ server-side and report queries are scoped to that identity.
                          ┌──────────┴───────────┐
                          │                      │
                          ▼                      ▼
-                ┌─────────────────┐    ┌─────────────────┐
-                │ MongoDB Atlas   │    │ Hugging Face   │
-                │ Saved reports   │    │ AI Model       │
-                │ and analysis    │    │ Explanation     │
-                └─────────────────┘    │ generation     │
-                            └─────────────────┘
+                ┌─────────────────┐
+                │ MongoDB Atlas   │
+                │ Saved reports   │
+                │ and analysis    │
+                └─────────────────┘
                          ┌─────────────────┐
                          │ Supabase Auth   │
                          │ Identity only   │
@@ -290,15 +289,14 @@ server-side and report queries are scoped to that identity.
 | **React**                     | Interactive UI components                            |
 | **CSS**                       | Responsive and customized interface                  |
 | **FastAPI**                   | Python backend and REST APIs                         |
-| **Python**                    | Data processing and AI/ML pipeline                   |
+| **Python**                    | Data processing and rule-based analysis              |
 | **Supabase Auth**             | Email/password identity and access tokens            |
 | **MongoDB Atlas**             | Managed cloud database for report analysis history   |
 | **PyMuPDF**                   | PDF text extraction                                  |
 | **Tesseract / EasyOCR**       | OCR for scanned reports                              |
 | **Pandas**                    | Data cleaning and transformation                     |
 | **Pydantic**                  | Data validation                                      |
-| **Hugging Face Transformers** | Open-source AI model integration                     |
-| **PyTorch**                   | Machine-learning model execution                     |
+| **Rule-based explanation**    | Immediate, deterministic result summaries            |
 | **Recharts**                  | Data visualization                                   |
 | **Git & GitHub**              | Version control and collaboration                    |
 
@@ -422,7 +420,7 @@ Comparison
 ```text
 Analysis Result
       ↓
-Hugging Face Model
+Rule-Based Formatter
       ↓
 Natural Language Explanation
 ```
@@ -442,10 +440,13 @@ Charts + Status + Explanation
 `POST /api/reports/analyze` connects the text-based PDF steps: upload, embedded
 text extraction, supported measurement parsing, validation, and deterministic
 analysis. The frontend's `/upload` page displays the extracted measurements,
-classifications, score, and recommendations. The upload is processed in
-memory and is not saved. Scanned PDFs and image OCR are not available until an
-OCR provider is configured. See [docs/api.md](docs/api.md) for the endpoint
-request and response details.
+classifications, score, recommendations, a report-driven 3D particle
+visualization, and an on-demand plain-language explanation. The visualization
+is an illustration based on reported values, not a literal view of the water.
+The explanation is generated immediately from the analysis rules when requested. The upload is
+processed in memory and is not saved. Scanned PDFs and image OCR are not
+available until an OCR provider is configured. See [docs/api.md](docs/api.md)
+for the endpoint request and response details.
 
 Supabase email/password authentication and MongoDB Atlas per-user report
 history are available when configured. Copy the environment templates and set
@@ -460,26 +461,24 @@ own web hosting.
 
 # 🧠 AquaCheck Intelligence
 
-AquaCheck separates **analysis** from **AI explanation**.
+AquaCheck separates **analysis** from its **plain-language explanation**.
 
 ```text
                 AQUACHECK INTELLIGENCE
                          │
              ┌───────────┴───────────┐
              │                       │
-       ANALYSIS ENGINE          AI ENGINE
-             │                       │
-       Rule-based logic       Hugging Face Model
-             │                       │
-       Standards comparison   Natural-language
-             │                 explanation
-             │                       │
-             └───────────┬───────────┘
+       ANALYSIS ENGINE       EXPLANATION
+             │                    │
+       Rule-based logic     Rule-based summary
+             │                    │
+       Standards comparison      │
+             └───────────┬────────┘
                          ▼
                   Final User Result
 ```
 
-This architecture helps maintain consistency in the core numerical assessment while using AI to improve the user's understanding of the results.
+This architecture keeps the numerical assessment and its explanation deterministic and consistent.
 
 ---
 
@@ -512,9 +511,9 @@ Works from existing water-quality reports rather than requiring specialized hard
 
 The core assessment uses explicit comparison and analysis rules.
 
-### 🤖 Open-Source AI
+### 🧾 Instant Rule-Based Explanations
 
-Uses Hugging Face models rather than requiring dependence on a commercial generative-AI API for explanations.
+Formats structured analysis results directly, with no model startup, inference wait, or external AI service.
 
 ### 📊 Data Visualization
 

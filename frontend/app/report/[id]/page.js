@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import AppPage from "../../../components/AppPage";
+import ReportInsights from "../../../components/ReportInsights";
 import { useAuth } from "../../../hooks/useAuth";
 import styles from "./report.module.css";
 
@@ -117,37 +118,11 @@ function ReportResult({ report }) {
         page{report.page_count === 1 ? "" : "s"}
       </p>
       <p className={styles.score}>Water score: {score}</p>
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Parameter</th>
-              <th>Value</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {analysis.parameters.map((parameter) => (
-              <tr key={parameter.parameter}>
-                <td>{parameter.parameter}</td>
-                <td>
-                  {parameter.value ?? "Unavailable"}{" "}
-                  {parameter.value == null ? "" : parameter.unit}
-                </td>
-                <td className={styles.status}>
-                  {parameter.status.replaceAll("_", " ")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <h2 className={styles.sectionTitle}>Recommendations</h2>
-      <ul className={styles.recommendations}>
-        {analysis.recommendations.map((recommendation) => (
-          <li key={recommendation}>{recommendation}</li>
-        ))}
-      </ul>
+      <ReportInsights
+        analysis={analysis}
+        reportMetadata={report}
+        fileName={report.filename || `Report_${report.id}`}
+      />
       <p className={styles.back}>
         <Link href="/history">Back to history</Link>
       </p>

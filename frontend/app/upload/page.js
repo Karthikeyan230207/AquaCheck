@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import ReportInsights from "../../components/ReportInsights";
 import { useAuth } from "../../hooks/useAuth";
 import styles from "./upload.module.css";
 
@@ -191,44 +192,8 @@ function AnalysisResult({
         </p>
       ) : null}
 
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Parameter</th>
-              <th>Measured value</th>
-              <th>Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            {analysis.parameters.map((parameter) => (
-              <tr key={parameter.parameter}>
-                <td>{parameter.parameter}</td>
-                <td>
-                  {parameter.value ?? "Unavailable"}{" "}
-                  {parameter.value === null ? "" : parameter.unit}
-                </td>
-                <td>
-                  <span
-                    className={`${styles.status} ${styles[parameter.status] || ""}`}
-                  >
-                    {parameter.status.replaceAll("_", " ")}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ReportInsights analysis={analysis} />
 
-      <div className={styles.recommendations}>
-        <h3>Recommendations</h3>
-        <ul>
-          {analysis.recommendations.map((recommendation) => (
-            <li key={recommendation}>{recommendation}</li>
-          ))}
-        </ul>
-      </div>
       <p className={styles.disclaimer}>
         This screening is informational and is not a substitute for professional
         laboratory advice.

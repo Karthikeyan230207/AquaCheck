@@ -39,9 +39,9 @@ user ID for report ownership.
 
 Supabase remains the identity provider; it is not used as the report database.
 Copy `frontend/.env.example` to `frontend/.env.local` and set
-`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from the
-Supabase project. The public anonymous key is intended for browser use; never
-put a service-role key in frontend configuration.
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the
+Supabase project. The publishable key is intended for browser use; never put a
+secret/service-role key in frontend configuration.
 
 Enable email/password authentication in Supabase. Email confirmation settings
 control whether a newly registered user must confirm their email before

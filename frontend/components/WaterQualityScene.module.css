@@ -1,0 +1,102 @@
+.sceneFrame {
+  position: relative;
+  min-height: 330px;
+  overflow: hidden;
+  border: 1px solid rgb(151 220 233 / 18%);
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgb(35 133 165 / 30%), transparent 47%),
+    linear-gradient(145deg, #092a3b, #061723 76%);
+}
+
+.scene {
+  width: 100%;
+  height: 340px;
+}
+
+.scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.particleTooltip {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  max-width: 280px;
+  padding: 10px 14px;
+  border: 1px solid rgb(173 226 238 / 30%);
+  border-radius: 12px;
+  background: rgb(6 23 35 / 88%);
+  backdrop-filter: blur(8px);
+  color: #dff4fa;
+  font-size: 12px;
+  line-height: 1.45;
+  pointer-events: none;
+  animation: fadeIn 0.15s ease-out;
+  z-index: 10;
+}
+
+.particleTooltip strong {
+  display: block;
+  color: #72e4c8;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.particleTooltip span {
+  display: inline-block;
+  color: #a8d5e5;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.particleTooltip p {
+  margin: 0 0 4px;
+  color: #c0d8e0;
+}
+
+.particleTooltip .hint {
+  display: block;
+  color: #8bbdc9;
+  font-size: 10px;
+  font-style: italic;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sceneError {
+  position: absolute;
+  inset: auto 14px 12px;
+  margin: 0;
+  color: #d7ecf1;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .sceneFrame {
+    min-height: 270px;
+  }
+
+  .scene {
+    height: 280px;
+  }
+
+  .particleTooltip {
+    max-width: 230px;
+    font-size: 11px;
+  }
+}

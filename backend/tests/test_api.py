@@ -144,6 +144,38 @@ def test_report_analysis_extracts_and_analyzes_pdf_measurements() -> None:
 	assert result["analysis"]["overall_score"] == 100.0
 
 
+def test_report_analysis_uses_average_from_parameter_range_table() -> None:
+	document = fitz.open()
+	page = document.new_page()
+	page.insert_text(
+		(72, 72),
+		"Parameter\nUnit\nStandard (Limit)\nMin\nAvg\nMax\nStatus\n"
+		"pH\n-\n6.5 - 8.5\n6.9\n7.4\n7.9\nCompliant\n"
+		"Turbidity\nNTU\n<= 1.0 (5.0 max)\n0.1\n0.4\n1.8\nMinor exceedance\n"
+		"Total Dissolved Solids\nmg/L\n500 (2000 max)\n210\n286\n342\nCompliant",
+	)
+	pdf_data = document.tobytes()
+	document.close()
+
+	response = client.post(
+		"/api/reports/analyze",
+		files={"file": ("range-report.pdf", pdf_data, "application/pdf")},
+	)
+
+	assert response.status_code == 200
+	result = response.json()
+	assert [(item["parameter"], item["value"]) for item in result["extracted_parameters"]] == [
+		("pH", 7.4),
+		("Turbidity", 0.4),
+		("TDS", 286.0),
+	]
+	assert [item["status"] for item in result["analysis"]["parameters"]] == [
+		"within_range",
+		"within_range",
+		"within_range",
+	]
+
+
 def test_signed_in_analysis_saves_report_to_mongodb(monkeypatch) -> None:
 	user = SimpleNamespace(user_id="owner-id", email="owner@example.com")
 	collection = FakeReportsCollection()
@@ -361,7 +393,7 @@ def test_analysis_endpoint_returns_statuses_and_score_method() -> None:
 	assert "within_range=100" in response.json()["score_method"]
 
 
-def test_explanation_endpoint_uses_rule_based_fallback_without_model() -> None:
+def test_explanation_endpoint_returns_rule_based_explanation() -> None:
 	response = client.post(
 		"/api/ai/explain",
 		json={
@@ -386,5 +418,8 @@ def test_explanation_endpoint_uses_rule_based_fallback_without_model() -> None:
 	)
 
 	assert response.status_code == 200
-	assert "pH" in response.json()["explanation"]
-	assert "outside range" in response.json()["explanation"]
+	payload = response.json()
+	assert payload["language"] == "en"
+	assert "Attention needed!" in payload["explanation"]
+	assert "pH is elevated / out of range" in payload["explanation"]
+	assert "Retest the sample." in payload["explanation"]
