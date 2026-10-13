@@ -1,11 +1,11 @@
 .meta {
-  color: #82918b;
+  color: rgba(192, 214, 227, 0.8);
   font-size: 12px;
 }
 
 .score {
   margin-top: 14px;
-  color: #28725d;
+  color: #9fefff;
   font-size: 18px;
   font-weight: 750;
 }
@@ -24,12 +24,12 @@
 .table th,
 .table td {
   padding: 12px 8px;
-  border-bottom: 1px solid #edf2ef;
+  border-bottom: 1px solid rgba(154, 219, 255, 0.12);
   font-size: 13px;
 }
 
 .table th {
-  color: #748780;
+  color: rgba(199, 219, 232, 0.82);
   font-size: 11px;
 }
 
@@ -39,7 +39,7 @@
 
 .sectionTitle {
   margin-top: 24px;
-  color: #254a3f;
+  color: #dffbff;
   font-size: 16px;
 }
 
@@ -49,13 +49,19 @@
   margin-top: 10px;
   padding-left: 20px;
   font-size: 13px;
+  color: rgba(219, 235, 241, 0.9);
 }
 
 .back {
   margin-top: 22px;
 }
 
+.back a {
+  color: #8fe7ff;
+  font-weight: 700;
+}
+
 .error {
-  color: #9c3729;
+  color: #ffd7d2;
   overflow-wrap: anywhere;
 }

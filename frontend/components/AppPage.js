@@ -1,34 +1,27 @@
-import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import AppShell from "./AppShell";
 import styles from "./AppPage.module.css";
 
-const navigation = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/upload", label: "Analyze report" },
-  { href: "/history", label: "History" },
-  { href: "/profile", label: "Profile" },
-];
-
+/**
+ * Page wrapper used by history, profile, report detail, and the account forms.
+ * Renders a consistent header/intro inside the shared AppShell navigation.
+ */
 export default function AppPage({ eyebrow, title, description, children }) {
   return (
-    <main className={styles.page}>
-      <header className={styles.header}>
-        <Link className={styles.brand} href="/">
-          AquaCheck
-        </Link>
-        <nav aria-label="Main navigation" className={styles.navigation}>
-          {navigation.map((item) => (
-            <Link href={item.href} key={item.href}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </header>
-      <section className={styles.content}>
-        <p className={styles.eyebrow}>{eyebrow}</p>
-        <h1>{title}</h1>
-        <p className={styles.description}>{description}</p>
-        {children && <div className={styles.card}>{children}</div>}
+    <AppShell>
+      <section className={styles.wrap}>
+        <header className={styles.head}>
+          {eyebrow && (
+            <p className={styles.eyebrow}>
+              <ChevronRight size={14} strokeWidth={2.6} aria-hidden="true" />
+              {eyebrow}
+            </p>
+          )}
+          <h1 className={styles.title}>{title}</h1>
+          {description && <p className={styles.description}>{description}</p>}
+        </header>
+        <div className={styles.body}>{children}</div>
       </section>
-    </main>
+    </AppShell>
   );
 }

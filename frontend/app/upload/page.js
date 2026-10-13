@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { FileText, Upload as UploadIcon } from "lucide-react";
 import ReportInsights from "../../components/ReportInsights";
+import AppShell from "../../components/AppShell";
 import { useAuth } from "../../hooks/useAuth";
 import styles from "./upload.module.css";
 
@@ -76,12 +78,12 @@ export default function UploadPage() {
   }
 
   return (
-    <main className={styles.page}>
+    <AppShell>
       <section className={styles.content}>
-        <Link className={styles.backLink} href="/">
-          ← AquaCheck
-        </Link>
-        <p className={styles.eyebrow}>WATER QUALITY CHECK</p>
+        <p className={styles.eyebrow}>
+          <UploadIcon size={13} strokeWidth={2.6} aria-hidden="true" />
+          WATER QUALITY CHECK
+        </p>
         <h1>Analyze a water report</h1>
         <p className={styles.intro}>
           Upload a text-based PDF to extract supported measurements and compare
@@ -91,7 +93,7 @@ export default function UploadPage() {
         <form className={styles.uploadForm} onSubmit={handleSubmit}>
           <label className={styles.fileLabel} htmlFor="report-file">
             <span className={styles.fileIcon} aria-hidden="true">
-              ↑
+              <FileText size={22} strokeWidth={2.1} />
             </span>
             <span>
               <strong>{file ? file.name : "Choose a PDF report"}</strong>
@@ -136,7 +138,7 @@ export default function UploadPage() {
           />
         )}
       </section>
-    </main>
+    </AppShell>
   );
 }
 

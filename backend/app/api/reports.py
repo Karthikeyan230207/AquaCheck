@@ -92,6 +92,12 @@ def _find_report(report_id: str, user_id: str) -> dict[str, object] | None:
 	)
 
 
+def _delete_report(report_id: str, user_id: str) -> bool:
+	collection = get_reports_collection()
+	result = collection.delete_one({"_id": report_id, "user_id": user_id})
+	return result.deleted_count > 0
+
+
 async def _read_upload(file: UploadFile) -> tuple[str, str, str, bytes]:
 	filename = (file.filename or "").strip()
 	extension = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -242,3 +248,22 @@ def get_report(
 		analysis=document["analysis"],
 		saved_to_history=True,
 	)
+
+
+@router.delete("/{report_id}", status_code=status.HTTP_200_OK)
+def delete_report(
+	report_id: str,
+	user: AuthenticatedUser = Depends(get_current_user),
+) -> dict[str, str]:
+	try:
+		deleted = _delete_report(report_id, user.user_id)
+	except (PyMongoError, RuntimeError) as error:
+		raise _database_error(error) from error
+
+	if not deleted:
+		raise HTTPException(
+			status_code=status.HTTP_404_NOT_FOUND,
+			detail="Report not found",
+		)
+	return {"message": "Report deleted successfully"}
+

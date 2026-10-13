@@ -1,0 +1,206 @@
+.footer {
+  width: 100%;
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  background: rgba(3, 16, 27, 0.85);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.container {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  padding: 56px 24px 28px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr 1.1fr 1.1fr;
+  gap: clamp(24px, 4vw, 48px);
+  margin-bottom: 40px;
+}
+
+/* Brand column */
+.brandCol {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-strong);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.brandMark {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--grad-primary);
+  color: #04222f;
+  box-shadow: 0 8px 20px rgba(56, 189, 248, 0.35);
+}
+
+.brandText {
+  color: #ffffff;
+}
+
+.mission {
+  color: rgba(200, 226, 238, 0.85);
+  font-size: 0.88rem;
+  line-height: 1.65;
+  max-width: 380px;
+}
+
+.trustBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 6px 12px;
+  border: 1px solid rgba(45, 212, 191, 0.25);
+  border-radius: var(--r-full);
+  background: rgba(45, 212, 191, 0.08);
+  color: var(--accent-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+/* Columns */
+.linksCol {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.colTitle {
+  color: #edfaff;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.linkList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.linkList a {
+  color: rgba(190, 218, 232, 0.82);
+  transition: color 150ms ease, transform 150ms ease;
+  display: inline-block;
+  font-size: 0.85rem;
+}
+
+.linkList a:hover {
+  color: #7fe6ff;
+  transform: translateX(2px);
+}
+
+.linkList span {
+  color: rgba(175, 204, 218, 0.78);
+  font-size: 0.83rem;
+  line-height: 1.4;
+}
+
+.refItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(190, 218, 232, 0.85) !important;
+}
+
+/* Disclaimer Bar */
+.disclaimerBar {
+  padding: 16px 20px;
+  border: 1px solid rgba(148, 218, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(8, 28, 44, 0.45);
+  margin-bottom: 28px;
+}
+
+.disclaimerBar p {
+  color: rgba(180, 208, 222, 0.78);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.disclaimerBar strong {
+  color: #9fe6f7;
+}
+
+/* Bottom Bar */
+.bottomBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 20px;
+  border-top: 1px solid rgba(148, 218, 255, 0.1);
+  font-size: 0.78rem;
+}
+
+.copyright {
+  color: rgba(165, 196, 212, 0.75);
+}
+
+.bottomLinks {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bottomLinks a {
+  color: rgba(190, 222, 236, 0.8);
+  transition: color 150ms ease;
+}
+
+.bottomLinks a:hover {
+  color: #ffffff;
+}
+
+.bottomLinks span {
+  color: rgba(148, 218, 255, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+}
+
+@media (max-width: 580px) {
+  .container {
+    padding: 40px 18px 24px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .bottomBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+

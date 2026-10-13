@@ -58,6 +58,14 @@ class FakeReportsCollection:
 			return None
 		return {key: value for key, value in document.items() if projection.get(key)}
 
+	def delete_one(self, filter_document: dict[str, object]):
+		doc_id = str(filter_document.get("_id", ""))
+		document = self.documents.get(doc_id)
+		if document is not None and document.get("user_id") == filter_document.get("user_id"):
+			del self.documents[doc_id]
+			return SimpleNamespace(deleted_count=1)
+		return SimpleNamespace(deleted_count=0)
+
 
 @pytest.fixture(autouse=True)
 def clear_auth_overrides():
@@ -423,3 +431,37 @@ def test_explanation_endpoint_returns_rule_based_explanation() -> None:
 	assert "Attention needed!" in payload["explanation"]
 	assert "pH is elevated / out of range" in payload["explanation"]
 	assert "Retest the sample." in payload["explanation"]
+
+
+def test_delete_report_success(monkeypatch) -> None:
+	user_id = "user-abc-123"
+	report_id = "report-xyz-789"
+	user = SimpleNamespace(user_id=user_id, email="test@example.com")
+	collection = FakeReportsCollection()
+	collection.documents[report_id] = {
+		"_id": report_id,
+		"user_id": user_id,
+		"filename": "test.pdf",
+	}
+
+	app.dependency_overrides[auth_api.get_current_user] = lambda: user
+	monkeypatch.setattr(reports_api, "get_reports_collection", lambda: collection)
+
+	response = client.delete(f"/api/reports/{report_id}")
+	assert response.status_code == 200
+	assert response.json() == {"message": "Report deleted successfully"}
+	assert report_id not in collection.documents
+
+
+def test_delete_report_not_found(monkeypatch) -> None:
+	user_id = "user-abc-123"
+	user = SimpleNamespace(user_id=user_id, email="test@example.com")
+	collection = FakeReportsCollection()
+
+	app.dependency_overrides[auth_api.get_current_user] = lambda: user
+	monkeypatch.setattr(reports_api, "get_reports_collection", lambda: collection)
+
+	response = client.delete("/api/reports/nonexistent-id")
+	assert response.status_code == 404
+	assert response.json()["detail"] == "Report not found"
+

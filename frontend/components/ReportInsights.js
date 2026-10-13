@@ -1,15 +1,41 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import {
+  Baby,
+  BookOpen,
+  ChevronDown,
+  CircleCheck,
+  CircleHelp,
+  CircleX,
+  Droplets,
+  Eye,
+  Filter,
+  Gauge,
+  Languages,
+  Layers,
+  Microscope,
+  OctagonAlert,
+  PartyPopper,
+  Printer,
+  RefreshCw,
+  ShieldCheck,
+  Smile,
+  Sparkles,
+  Sprout,
+  TriangleAlert,
+  Waves,
+  Wrench,
+} from "lucide-react";
 import WaterQualityScene from "./WaterQualityScene";
 import styles from "./ReportInsights.module.css";
 
 const LANGUAGES = [
-  { code: "en", label: "🇬🇧 English" },
-  { code: "hi", label: "🇮🇳 हिंदी" },
-  { code: "ta", label: "🇮🇳 தமிழ்" },
-  { code: "es", label: "🇪🇸 Español" },
-  { code: "fr", label: "🇫🇷 Français" },
+  { code: "en", label: "English" },
+  { code: "hi", label: "हिंदी" },
+  { code: "ta", label: "தமிழ்" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
 ];
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -21,56 +47,56 @@ const TODDLER_EXPLANATIONS = {
     simple: "Tells us if the water is sour like a lemon or slippery like soap. Good water should be just right in the middle (like sweet rain) so it doesn't hurt your tummy or bite the pipes.",
     actionGood: "Perfect balance! Smooth and gentle.",
     actionBad: "Too sour or too bitter. Needs a simple filter to balance it.",
-    icon: "🍋",
+    icon: Gauge,
   },
   TDS: {
     title: "Tiny Salt & Mineral Bits",
     simple: "Think of invisible sprinkles dissolved in water. A few sprinkles make water taste fresh, but too many turn water salty and leave white chalky spots on cups.",
     actionGood: "Nice and crisp water without gritty chalk.",
     actionBad: "Lots of extra salt bits. An RO (Reverse Osmosis) filter cleans this right away.",
-    icon: "🧂",
+    icon: Layers,
   },
   Turbidity: {
     title: "Water Clarity (Cloudiness)",
     simple: "Is the water crystal clear like glass, or cloudy like muddy pond water? We always want crystal clear water with zero floating dust.",
     actionGood: "Super clear, like a glass of mountain ice!",
     actionBad: "A bit foggy or dusty. Let's run it through a sediment filter.",
-    icon: "🔍",
+    icon: Eye,
   },
   "Total Hardness": {
     title: "Soap Bubble Maker",
     simple: "Measures calcium rock dust. When it is too high, soap won't make fluffy bubbles and it leaves crusty white rings on taps and pots.",
     actionGood: "Makes big fluffy soap bubbles easily!",
     actionBad: "Hard water minerals found. A water softener helps soap bubble up.",
-    icon: "🫧",
+    icon: Waves,
   },
   Chloride: {
     title: "Table Salt Level",
     simple: "Too much chloride makes water taste salty like seawater and can rust metal pipes over time.",
     actionGood: "Clean fresh taste, no salty bite.",
     actionBad: "Salty taste detected. Check where groundwater is coming from.",
-    icon: "🌊",
+    icon: Droplets,
   },
   Fluoride: {
     title: "Tooth Shield Mineral",
     simple: "A tiny pinch protects teeth from cavities! But too much can turn baby teeth spotty or brown.",
     actionGood: "Just the right pinch for strong teeth.",
     actionBad: "Too much for little teeth! Use activated alumina or RO purification.",
-    icon: "🦷",
+    icon: Smile,
   },
   Nitrate: {
     title: "Farm Fertilizer Runoff",
     simple: "Sneaks into wells from farm dirt and fertilizers. Very important for babies because high nitrate makes it hard for little bodies to carry oxygen.",
     actionGood: "Clean and safe from fertilizer runoff.",
     actionBad: "Keep away from babies & pregnant moms until purified with RO or distillation!",
-    icon: "🌱",
+    icon: Sprout,
   },
   Iron: {
     title: "Rusty Metal Taste",
     simple: "Comes from red earth or rusty old pipes. It turns water brownish-orange, tastes like chewing on a coin, and stains laundry.",
     actionGood: "No metallic taste or reddish stains.",
     actionBad: "Rusty reddish tint! Install an iron filter to take out the metal.",
-    icon: "🔩",
+    icon: Wrench,
   },
 };
 
@@ -116,9 +142,9 @@ export default function ReportInsights({
         badge: "Needs More Information",
         headline: "We need more test numbers to be sure!",
         subline: "This report doesn't have enough measurements yet. Don't guess—get a full water test.",
-        color: "#6b7280",
-        bg: "#f3f4f6",
-        icon: "❓",
+        color: "#9dbdd0",
+        bg: "rgba(125, 211, 252, 0.08)",
+        icon: CircleHelp,
       };
     }
 
@@ -131,9 +157,9 @@ export default function ReportInsights({
         badge: "STOP & FIX (Action Needed)",
         headline: "Do NOT drink directly from tap right now!",
         subline: "Some levels are too high for drinking. Check the quick action steps below before drinking or cooking.",
-        color: "#b91c1c",
-        bg: "#fef2f2",
-        icon: "🛑",
+        color: "#f87171",
+        bg: "rgba(248, 113, 113, 0.1)",
+        icon: OctagonAlert,
       };
     }
 
@@ -143,9 +169,9 @@ export default function ReportInsights({
         badge: "CAUTION (Review Needed)",
         headline: "Okay for some uses, but needs attention!",
         subline: "The water is mostly fine, but a few parameters are approaching limits. A basic filter or softener will fix it.",
-        color: "#b45309",
-        bg: "#fffbeb",
-        icon: "⚠️",
+        color: "#fbbf24",
+        bg: "rgba(251, 191, 36, 0.1)",
+        icon: TriangleAlert,
       };
     }
 
@@ -154,9 +180,9 @@ export default function ReportInsights({
       badge: "ALL CLEAR (Great Water)",
       headline: "Yay! This water is clean, fresh, and happy!",
       subline: "All tested numbers look great and safe. No extra filters or treatments are required right now.",
-      color: "#15803d",
-      bg: "#f0fdf4",
-      icon: "✅",
+      color: "#34d399",
+      bg: "rgba(52, 211, 153, 0.1)",
+      icon: ShieldCheck,
     };
   }, [analysis]);
 
@@ -178,7 +204,7 @@ export default function ReportInsights({
       actions.push({
         priority: "CRITICAL",
         text: "Keep away from babies and formula: Nitrate is elevated. Use reverse osmosis (RO) filtration or bottled water.",
-        icon: "🍼",
+        icon: Baby,
       });
     }
 
@@ -187,7 +213,7 @@ export default function ReportInsights({
       actions.push({
         priority: "HIGH",
         text: "Clean out cloudiness: Install a 5-micron sediment filter before drinking or using appliances.",
-        icon: "🧹",
+        icon: Filter,
       });
     }
 
@@ -196,7 +222,7 @@ export default function ReportInsights({
       actions.push({
         priority: "MEDIUM",
         text: "Stop rust & staining: Add an iron/manganese removal filter or check older iron plumbing.",
-        icon: "🛠️",
+        icon: Wrench,
       });
     }
 
@@ -205,7 +231,7 @@ export default function ReportInsights({
       actions.push({
         priority: "MEDIUM",
         text: "High dissolved solids: Install a kitchen RO drinking system to reduce mineral salts.",
-        icon: "💧",
+        icon: Droplets,
       });
     }
 
@@ -214,7 +240,7 @@ export default function ReportInsights({
       actions.push({
         priority: "LOW",
         text: "Hard water scale: An ion-exchange water softener will protect your geyser and pipes.",
-        icon: "✨",
+        icon: Sparkles,
       });
     }
 
@@ -222,7 +248,7 @@ export default function ReportInsights({
       actions.push({
         priority: "ROUTINE",
         text: "Everything is healthy! Just re-test once a year or whenever taste or smell changes.",
-        icon: "🎉",
+        icon: PartyPopper,
       });
     }
 
@@ -330,7 +356,7 @@ export default function ReportInsights({
         }}
       >
         <div className={styles.verdictIconWrap} style={{ color: verdict.color }}>
-          <span className={styles.verdictEmoji}>{verdict.icon}</span>
+          <span className={styles.verdictIcon}>{<verdict.icon size={34} strokeWidth={2.2} />}</span>
         </div>
         <div className={styles.verdictText}>
           <div className={styles.badgeRow}>
@@ -361,23 +387,19 @@ export default function ReportInsights({
           </div>
           <button
             type="button"
-            className={styles.pdfDownloadButton}
+            className={`${styles.btn} ${styles.btnSecondary}`}
             onClick={handleDownloadReport}
             disabled={isDownloading}
             title="Download or print this report as PDF"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
+            <Printer size={16} strokeWidth={2.2} aria-hidden="true" />
             {isDownloading ? "Preparing PDF…" : "Save / Print PDF"}
           </button>
         </div>
         <div className={styles.actionGrid}>
           {actionChecklist.map((act, i) => (
             <div key={i} className={styles.actionItem}>
-              <span className={styles.actionEmoji}>{act.icon}</span>
+              <span className={styles.actionIcon}>{<act.icon size={24} strokeWidth={2.1} />}</span>
               <div>
                 <span className={`${styles.priorityBadge} ${styles[act.priority.toLowerCase()] || ""}`}>
                   {act.priority}
@@ -408,7 +430,7 @@ export default function ReportInsights({
               simple: "A water test measurement.",
               actionGood: "Looks good!",
               actionBad: "Needs filtering.",
-              icon: "💧",
+              icon: Droplets,
             };
             const isGood = param.status === "within_range";
             const isAttention = param.status === "attention";
@@ -422,14 +444,15 @@ export default function ReportInsights({
               >
                 <div className={styles.kidCardTop}>
                   <div className={styles.kidIconTitle}>
-                    <span className={styles.cardEmoji}>{info.icon}</span>
+                    <span className={styles.cardIcon}>{<info.icon size={24} strokeWidth={2.1} />}</span>
                     <div>
                       <h4 className={styles.kidParamName}>{info.title}</h4>
                       <small className={styles.techSubName}>({param.parameter})</small>
                     </div>
                   </div>
                   <span className={`${styles.kidStatusTag} ${isBad ? styles.tagRed : isAttention ? styles.tagYellow : styles.tagGreen}`}>
-                    {isBad ? "Needs Fix ❌" : isAttention ? "Watch Out ⚠️" : "Safe & Sound ✅"}
+                    {isBad ? <CircleX size={13} strokeWidth={2.4} /> : isAttention ? <TriangleAlert size={13} strokeWidth={2.4} /> : <CircleCheck size={13} strokeWidth={2.4} />}
+                    {isBad ? "Needs Fix" : isAttention ? "Watch Out" : "Safe & Sound"}
                   </span>
                 </div>
 
@@ -444,14 +467,15 @@ export default function ReportInsights({
                   <span>Reading: <strong>{param.value ?? "None"} {param.unit}</strong></span>
                   <button
                     type="button"
-                    className={styles.tap3dButton}
+                    className={`${styles.btn} ${styles.btnChipSm}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedParam(param.parameter);
                       sceneRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
                     }}
                   >
-                    🔬 View 3D particle
+                    <Microscope size={13} strokeWidth={2.2} />
+                    View 3D particle
                   </button>
                 </div>
               </div>
@@ -474,14 +498,14 @@ export default function ReportInsights({
           <div className={styles.modeToggle} role="group" aria-label="Comparison visual mode">
             <button
               type="button"
-              className={`${styles.toggleButton} ${viewMode === "sample" ? styles.toggleActive : ""}`}
+              className={`${styles.btn} ${styles.btnChip} ${viewMode === "sample" ? styles.btnChipActive : ""}`}
               onClick={() => setViewMode("sample")}
             >
               Your Sample
             </button>
             <button
               type="button"
-              className={`${styles.toggleButton} ${viewMode === "normal" ? styles.toggleActive : ""}`}
+              className={`${styles.btn} ${styles.btnChip} ${viewMode === "normal" ? styles.btnChipActive : ""}`}
               onClick={() => setViewMode("normal")}
             >
               Pure Baseline
@@ -534,9 +558,15 @@ export default function ReportInsights({
           aria-expanded={showTechnicalDetails}
         >
           <span>
-            🔬 {showTechnicalDetails ? "Hide Laboratory Metrics & Standard Limits" : "Show Full Laboratory Numbers & Limits (Technical)"}
+            <Microscope size={15} strokeWidth={2.2} /> {showTechnicalDetails ? "Hide Laboratory Metrics & Standard Limits" : "Show Full Laboratory Numbers & Limits (Technical)"}
           </span>
-          <span className={styles.arrowIcon}>{showTechnicalDetails ? "▲" : "▼"}</span>
+          <span className={styles.arrowIcon} style={{ display: "inline-flex" }}>
+            <ChevronDown
+              size={16}
+              strokeWidth={2.4}
+              style={{ transform: showTechnicalDetails ? "rotate(180deg)" : "none", transition: "transform 200ms ease" }}
+            />
+          </span>
         </button>
 
         {showTechnicalDetails && (
@@ -583,11 +613,14 @@ export default function ReportInsights({
           </div>
           {/* Language Selector */}
           <div className={styles.langSelector} role="group" aria-label="Select explanation language">
+            <span className={styles.langIcon} aria-hidden="true">
+              <Languages size={16} strokeWidth={2.2} />
+            </span>
             {LANGUAGES.map((lang) => (
               <button
                 key={lang.code}
                 type="button"
-                className={`${styles.langButton} ${selectedLang === lang.code ? styles.langButtonActive : ""}`}
+                className={`${styles.btn} ${styles.btnChip} ${selectedLang === lang.code ? styles.btnChipActive : ""}`}
                 onClick={() => handleLangChange(lang.code)}
               >
                 {lang.label}
@@ -598,12 +631,13 @@ export default function ReportInsights({
 
         {!explanation && !loading ? (
           <button
-            className={styles.explainButton}
+            className={`${styles.btn} ${styles.btnPrimary}`}
             disabled={loading}
             onClick={() => requestExplanation()}
             type="button"
           >
-            📖 {LANGUAGES.find((l) => l.code === selectedLang)?.label ?? "English"} — Generate explanation
+            <BookOpen size={16} strokeWidth={2.2} />
+            {LANGUAGES.find((l) => l.code === selectedLang)?.label ?? "English"} — Generate explanation
           </button>
         ) : null}
 
@@ -621,14 +655,15 @@ export default function ReportInsights({
             ))}
             <div className={styles.retryRow}>
               <button
-                className={styles.retryButton}
+                className={`${styles.btn} ${styles.btnSecondary}`}
                 onClick={() => {
                   setExplanation("");
                   requestExplanation();
                 }}
                 type="button"
               >
-                🔄 Regenerate story
+                <RefreshCw size={15} strokeWidth={2.2} />
+                Regenerate story
               </button>
             </div>
           </div>

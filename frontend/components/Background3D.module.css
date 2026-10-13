@@ -1,0 +1,18 @@
+.canvasContainer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.85;
+  transition: opacity 0.8s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvasContainer {
+    opacity: 0.55;
+  }
+}
+

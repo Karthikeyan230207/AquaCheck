@@ -43,11 +43,7 @@ const PARTICLE_CONFIG = {
 
 function getParticleCount(parameter, mode = "sample") {
   if (parameter.parameter === "pH" || parameter.value == null) return 0;
-
-  if (mode === "normal") {
-    // Normal / baseline visual: minimal particle density
-    return 4;
-  }
+  if (mode === "normal") return 4;
 
   const reference = parameter.reference_maximum ?? parameter.permissible_maximum;
   const relativeValue =
@@ -56,42 +52,53 @@ function getParticleCount(parameter, mode = "sample") {
       : 0.4;
   const statusBoost =
     parameter.status === "outside_range"
-      ? 12
+      ? 14
       : parameter.status === "attention"
-        ? 6
+        ? 7
         : 0;
-  return Math.max(3, Math.min(32, 4 + Math.round(relativeValue * 10) + statusBoost));
+  return Math.max(4, Math.min(40, 6 + Math.round(relativeValue * 12) + statusBoost));
+}
+
+function makeRng(seed) {
+  let s = seed >>> 0 || 1;
+  return () => {
+    s ^= s << 13;
+    s ^= s >>> 17;
+    s ^= s << 5;
+    s >>>= 0;
+    return s / 4294967296;
+  };
 }
 
 function getWaterColor(parameters, mode = "sample") {
   if (mode === "normal") {
-    return { color: "#55c6e5", opacity: 0.42, glow: "#49c9e4" };
+    return { color: "#5fc9e8", opacity: 0.5, glow: "#4fd0e6" };
   }
 
   const phParam = parameters.find((p) => p.parameter === "pH");
   const turbParam = parameters.find((p) => p.parameter === "Turbidity");
   const ironParam = parameters.find((p) => p.parameter === "Iron");
 
-  let color = "#55c6e5";
-  let opacity = 0.48;
-  let glow = "#49c9e4";
+  let color = "#5fc9e8";
+  let opacity = 0.55;
+  let glow = "#4fd0e6";
 
   if (phParam && phParam.value != null) {
     if (phParam.value < 6.5) {
-      color = "#e5987d"; // acidic yellowish/orange tint
+      color = "#e59a80";
       glow = "#e5825d";
     } else if (phParam.value > 8.5) {
-      color = "#6f7de5"; // high alkaline purplish/deep blue
-      glow = "#586be5";
+      color = "#7280e8";
+      glow = "#5f6ee6";
     }
   }
 
   if (ironParam && ironParam.status === "outside_range") {
-    color = "#cc885a";
+    color = "#cf8a5c";
     glow = "#d97d41";
-    opacity = 0.58;
+    opacity = 0.62;
   } else if (turbParam && turbParam.status === "outside_range") {
-    opacity = 0.65;
+    opacity = 0.72;
   }
 
   return { color, opacity, glow };
@@ -114,10 +121,13 @@ export default function WaterQualityScene({
     let resizeObserver;
     let scene;
     let camera;
-    let waterGroup;
+    let glassGroup;
     let raycaster;
     let mouse;
-    let interactiveMeshes = [];
+    let waterSurface;
+    let particleMeshes = [];
+    let basePositions = [];
+    const clock = { t: 0 };
 
     async function startScene() {
       try {
@@ -126,8 +136,9 @@ export default function WaterQualityScene({
         if (!host || disposed) return;
 
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-        camera.position.set(0, 0, 5.2);
+        camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+        camera.position.set(0, 0.15, 6.4);
+        camera.lookAt(0, 0, 0);
 
         renderer = new THREE.WebGLRenderer({
           alpha: true,
@@ -142,51 +153,124 @@ export default function WaterQualityScene({
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2(-999, -999);
 
-        scene.add(new THREE.AmbientLight(0xc9efff, 2.2));
-        const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
-        keyLight.position.set(-3, 4, 5);
+        scene.add(new THREE.AmbientLight(0xd6f2ff, 2.4));
+        const keyLight = new THREE.DirectionalLight(0xffffff, 3.4);
+        keyLight.position.set(-4, 6, 6);
         scene.add(keyLight);
-        const glowLight = new THREE.PointLight(0x4bd7f2, 35, 12);
-        glowLight.position.set(2, -1, 2);
-        scene.add(glowLight);
+        const rimLight = new THREE.DirectionalLight(0x9fe8ff, 2.0);
+        rimLight.position.set(5, -2, -4);
+        scene.add(rimLight);
+        const underGlow = new THREE.PointLight(0x4bd7f2, 28, 14);
+        underGlow.position.set(0, -2.4, 1.5);
+        scene.add(underGlow);
 
-        waterGroup = new THREE.Group();
-        scene.add(waterGroup);
+        glassGroup = new THREE.Group();
+        scene.add(glassGroup);
 
-        const waterAppearance = getWaterColor(parameters, viewMode);
+        const appearance = getWaterColor(parameters, viewMode);
+        const glassR = 1.55;
+        const glassH = 2.9;
 
-        const water = new THREE.Mesh(
-          new THREE.SphereGeometry(1.35, 64, 48),
+        // Glass body (open cylinder, double-sided, transparent)
+        const glassMat = new THREE.MeshPhysicalMaterial({
+          color: 0xd9f4ff,
+          metalness: 0,
+          roughness: 0.05,
+          transparent: true,
+          opacity: 0.16,
+          transmission: 0.9,
+          thickness: 0.4,
+          side: THREE.DoubleSide,
+          clearcoat: 1,
+          clearcoatRoughness: 0.04,
+          depthWrite: false,
+        });
+        const glassBody = new THREE.Mesh(
+          new THREE.CylinderGeometry(glassR, glassR * 0.86, glassH, 64, 1, true),
+          glassMat,
+        );
+        glassGroup.add(glassBody);
+
+        // Glass base (disc)
+        const glassBase = new THREE.Mesh(
+          new THREE.CylinderGeometry(glassR * 0.86, glassR * 0.86, 0.08, 64),
           new THREE.MeshPhysicalMaterial({
-            color: waterAppearance.color,
+            color: 0xd9f4ff,
+            roughness: 0.06,
+            transparent: true,
+            opacity: 0.35,
+            transmission: 0.7,
+            thickness: 0.3,
+            side: THREE.DoubleSide,
+          }),
+        );
+        glassBase.position.y = -glassH / 2 - 0.04;
+        glassGroup.add(glassBase);
+
+        // Rim highlight ring
+        const rim = new THREE.Mesh(
+          new THREE.TorusGeometry(glassR, 0.035, 12, 64),
+          new THREE.MeshStandardMaterial({
+            color: 0xeafcff,
+            emissive: 0x9fe8ff,
+            emissiveIntensity: 0.5,
+            roughness: 0.2,
+            metalness: 0.1,
+          }),
+        );
+        rim.rotation.x = Math.PI / 2;
+        rim.position.y = glassH / 2;
+        glassGroup.add(rim);
+
+        // Water fill (inside the glass)
+        const fillR = glassR - 0.05;
+        const fillH = glassH * 0.74;
+        const fillY = -glassH / 2 + fillH / 2 + 0.04;
+        const water = new THREE.Mesh(
+          new THREE.CylinderGeometry(fillR, fillR * 0.9, fillH, 64, 1, true),
+          new THREE.MeshPhysicalMaterial({
+            color: appearance.color,
             metalness: 0.05,
-            roughness: 0.12,
+            roughness: 0.1,
             transparent: true,
-            opacity: waterAppearance.opacity,
-            transmission: 0.28,
-            thickness: 0.8,
+            opacity: appearance.opacity,
+            transmission: 0.4,
+            thickness: 1.2,
+            side: THREE.DoubleSide,
             clearcoat: 1,
-            clearcoatRoughness: 0.08,
+            clearcoatRoughness: 0.06,
           }),
         );
-        waterGroup.add(water);
+        water.position.y = fillY;
+        glassGroup.add(water);
 
-        const innerGlow = new THREE.Mesh(
-          new THREE.SphereGeometry(1.27, 48, 36),
-          new THREE.MeshBasicMaterial({
-            color: waterAppearance.glow,
+        // Water surface (top disc, wobbles)
+        waterSurface = new THREE.Mesh(
+          new THREE.CircleGeometry(fillR, 64),
+          new THREE.MeshPhysicalMaterial({
+            color: appearance.glow,
+            emissive: appearance.glow,
+            emissiveIntensity: 0.25,
             transparent: true,
-            opacity: 0.1,
-            side: THREE.BackSide,
+            opacity: 0.5,
+            roughness: 0.05,
+            side: THREE.DoubleSide,
           }),
         );
-        waterGroup.add(innerGlow);
+        waterSurface.rotation.x = -Math.PI / 2;
+        waterSurface.position.y = -glassH / 2 + fillH + 0.04;
+        glassGroup.add(waterSurface);
 
+        // Floating particles (the report's contaminants)
         const particlesGroup = new THREE.Group();
-        waterGroup.add(particlesGroup);
-        interactiveMeshes = [];
+        glassGroup.add(particlesGroup);
+        particleMeshes = [];
+        basePositions = [];
+        const rng = makeRng(parameters.length * 977 + 13);
+        const waterTop = fillY + fillH / 2;
+        const waterBottom = fillY - fillH / 2;
 
-        parameters.forEach((param, parameterIndex) => {
+        parameters.forEach((param) => {
           const cfg = PARTICLE_CONFIG[param.parameter] || {
             color: "#d6f2ff",
             label: param.parameter,
@@ -196,46 +280,47 @@ export default function WaterQualityScene({
           if (!count) return;
 
           const isSelected = selectedParameterName === param.parameter;
+          const isNormal = viewMode === "normal";
+          const emissive = isNormal
+            ? 0.18
+            : isSelected
+              ? 1.0
+              : param.status === "outside_range"
+                ? 0.75
+                : param.status === "attention"
+                  ? 0.45
+                  : 0.2;
 
           const material = new THREE.MeshStandardMaterial({
             color: cfg.color,
             emissive: cfg.color,
-            emissiveIntensity:
-              isSelected
-                ? 0.95
-                : param.status === "outside_range"
-                  ? 0.7
-                  : param.status === "attention"
-                    ? 0.4
-                    : 0.18,
-            roughness: 0.28,
-            metalness: 0.04,
+            emissiveIntensity: emissive,
+            roughness: 0.3,
+            metalness: 0.05,
           });
+          const geometry = new THREE.SphereGeometry(1, 12, 10);
 
-          const baseRadius = isSelected ? 0.055 : 0.035;
-          const geometry = new THREE.SphereGeometry(baseRadius, 12, 10);
-
-          for (let index = 0; index < count; index += 1) {
-            const seed = (parameterIndex + 1) * 91 + index * 37;
-            const y = 1 - (index / count) * 2;
-            const radius = 1.12 * Math.sqrt(1 - y * y);
-            const angle = seed * 2.399963;
-            const depth = ((seed % 17) / 17 - 0.5) * 0.72;
-            const dot = new THREE.Mesh(geometry, material);
-            const size = 0.65 + ((seed * 7) % 9) / 12;
-            dot.scale.setScalar(size);
-            dot.position.set(
-              Math.cos(angle) * radius,
-              y * 1.12,
-              Math.sin(angle) * radius + depth,
-            );
-            dot.userData = {
+          for (let i = 0; i < count; i += 1) {
+            const mesh = new THREE.Mesh(geometry, material);
+            const a = rng() * Math.PI * 2;
+            const rad = Math.sqrt(rng()) * (fillR - 0.18);
+            const x = Math.cos(a) * rad;
+            const z = Math.sin(a) * rad;
+            const y = waterBottom + 0.12 + rng() * (waterTop - waterBottom - 0.2);
+            const size = (isSelected ? 0.075 : 0.05) * (0.7 + rng() * 0.7);
+            mesh.scale.setScalar(size);
+            mesh.position.set(x, y, z);
+            mesh.userData = {
               parameter: param.parameter,
               info: cfg,
               data: param,
+              phase: rng() * Math.PI * 2,
+              speed: 0.4 + rng() * 0.6,
+              spin: (rng() - 0.5) * 0.02,
             };
-            particlesGroup.add(dot);
-            interactiveMeshes.push(dot);
+            particlesGroup.add(mesh);
+            particleMeshes.push(mesh);
+            basePositions.push(mesh.position.clone());
           }
         });
 
@@ -252,58 +337,137 @@ export default function WaterQualityScene({
           camera.aspect = width / height;
           camera.updateProjectionMatrix();
         };
-
         resizeObserver = new ResizeObserver(resize);
         resizeObserver.observe(host);
         resize();
 
-        // Pointer interactions for clicking/hovering particles
+        let isDragging = false;
+        let previousPointer = { x: 0, y: 0 };
+        let rotationY = 0;
+        let rotationX = 0;
+        let velocityY = 0;
+        let velocityX = 0;
+        let totalDragDistance = 0;
+
+        host.style.cursor = "grab";
+
+        const handlePointerDown = (event) => {
+          isDragging = true;
+          previousPointer = { x: event.clientX, y: event.clientY };
+          totalDragDistance = 0;
+          velocityY = 0;
+          velocityX = 0;
+          try {
+            host.setPointerCapture(event.pointerId);
+          } catch {}
+          host.style.cursor = "grabbing";
+        };
+
         const handlePointerMove = (event) => {
           const rect = host.getBoundingClientRect();
           mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
           mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-          raycaster.setFromCamera(mouse, camera);
-          const intersects = raycaster.intersectObjects(interactiveMeshes);
-          if (intersects.length > 0) {
-            const topHit = intersects[0].object.userData;
-            setHoveredInfo(topHit);
-            host.style.cursor = "pointer";
+          if (isDragging) {
+            const deltaX = event.clientX - previousPointer.x;
+            const deltaY = event.clientY - previousPointer.y;
+            previousPointer = { x: event.clientX, y: event.clientY };
+            totalDragDistance += Math.abs(deltaX) + Math.abs(deltaY);
+
+            rotationY += deltaX * 0.012; // 360-degree horizontal rotation
+            rotationX = Math.max(-0.65, Math.min(0.65, rotationX + deltaY * 0.008)); // Vertical tilt
+            velocityY = deltaX * 0.007;
+            velocityX = deltaY * 0.004;
+            host.style.cursor = "grabbing";
           } else {
-            setHoveredInfo(null);
-            host.style.cursor = "default";
-          }
-        };
-
-        const handleClick = (event) => {
-          const rect = host.getBoundingClientRect();
-          mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-          mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-          raycaster.setFromCamera(mouse, camera);
-          const intersects = raycaster.intersectObjects(interactiveMeshes);
-          if (intersects.length > 0) {
-            const hitData = intersects[0].object.userData;
-            if (onSelectParameter) {
-              onSelectParameter(hitData.parameter);
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(particleMeshes);
+            if (intersects.length > 0) {
+              setHoveredInfo(intersects[0].object.userData);
+              host.style.cursor = "pointer";
+            } else {
+              setHoveredInfo(null);
+              host.style.cursor = "grab";
             }
           }
         };
 
+        const handlePointerUp = (event) => {
+          if (isDragging) {
+            isDragging = false;
+            try {
+              host.releasePointerCapture(event.pointerId);
+            } catch {}
+            host.style.cursor = "grab";
+
+            // If user clicked without dragging, select the hovered particle:
+            if (totalDragDistance < 6) {
+              raycaster.setFromCamera(mouse, camera);
+              const intersects = raycaster.intersectObjects(particleMeshes);
+              if (intersects.length > 0 && onSelectParameter) {
+                onSelectParameter(intersects[0].object.userData.parameter);
+              }
+            }
+          }
+        };
+
+        const handlePointerCancel = (event) => {
+          isDragging = false;
+          try {
+            host.releasePointerCapture(event.pointerId);
+          } catch {}
+          host.style.cursor = "grab";
+        };
+
+        host.addEventListener("pointerdown", handlePointerDown);
         host.addEventListener("pointermove", handlePointerMove);
-        host.addEventListener("click", handleClick);
+        host.addEventListener("pointerup", handlePointerUp);
+        host.addEventListener("pointercancel", handlePointerCancel);
 
         const render = () => {
           if (disposed) return;
-          if (!reducedMotion && waterGroup) waterGroup.rotation.y += 0.0022;
+          clock.t += 0.016;
+
+          if (!isDragging) {
+            // Apply inertia with smooth damping
+            velocityY *= 0.92;
+            velocityX *= 0.92;
+            rotationY += velocityY;
+            rotationX = Math.max(-0.65, Math.min(0.65, rotationX + velocityX));
+
+            // Gentle ambient rotation when not interacting
+            if (Math.abs(velocityY) < 0.0004 && !reducedMotion) {
+              rotationY += 0.002;
+            }
+          }
+
+          glassGroup.rotation.y = rotationY;
+          glassGroup.rotation.x = rotationX;
+
+          if (!reducedMotion) {
+            glassGroup.rotation.z = Math.sin(clock.t * 0.31) * 0.02;
+            glassGroup.position.y = Math.sin(clock.t * 0.9) * 0.05;
+            waterSurface.position.x = Math.sin(clock.t * 1.6) * 0.02;
+            waterSurface.position.z = Math.cos(clock.t * 1.3) * 0.02;
+            particleMeshes.forEach((m, idx) => {
+              const ud = m.userData;
+              const base = basePositions[idx];
+              m.position.y = base.y + Math.sin(clock.t * ud.speed + ud.phase) * 0.09;
+              m.position.x = base.x + Math.sin(clock.t * ud.speed * 0.7 + ud.phase) * 0.05;
+              m.position.z = base.z + Math.cos(clock.t * ud.speed * 0.6 + ud.phase) * 0.05;
+              m.rotation.y += ud.spin;
+            });
+          }
           renderer.render(scene, camera);
           animationFrame = window.requestAnimationFrame(render);
         };
         render();
 
         return () => {
+          host.removeEventListener("pointerdown", handlePointerDown);
           host.removeEventListener("pointermove", handlePointerMove);
-          host.removeEventListener("click", handleClick);
+          host.removeEventListener("pointerup", handlePointerUp);
+          host.removeEventListener("pointercancel", handlePointerCancel);
         };
       } catch {
         if (!disposed) {
@@ -341,7 +505,7 @@ export default function WaterQualityScene({
   return (
     <div className={styles.sceneFrame}>
       <div
-        aria-label="Interactive 3D water quality sphere"
+        aria-label="Interactive 3D glass of water showing suspended particles"
         className={styles.scene}
         ref={hostRef}
         role="img"
@@ -352,12 +516,15 @@ export default function WaterQualityScene({
           <span>
             {hoveredInfo.data.value != null
               ? `${hoveredInfo.data.value} ${hoveredInfo.data.unit}`
-              : "No value"} · {hoveredInfo.data.status.replaceAll("_", " ")}
+              : "No value"} Â· {hoveredInfo.data.status.replaceAll("_", " ")}
           </span>
           <p>{hoveredInfo.info.role}</p>
           <small className={styles.hint}>Click to inspect parameter details</small>
         </div>
       ) : null}
+      <div className={styles.rotateBadge} aria-hidden="true">
+        <span>🔄 Drag to rotate 360°</span>
+      </div>
       {sceneError ? (
         <p className={styles.sceneError} role="status">
           {sceneError}
