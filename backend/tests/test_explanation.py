@@ -50,6 +50,22 @@ def test_explanation_multilingual_support() -> None:
 	assert "pH அளவுக்கு அதிகமாக ஆக உள்ளது" in ta_text
 
 
+def test_non_english_explanations_do_not_append_english_recommendations() -> None:
+	analysis = _analysis()
+	analysis.recommendations = ["Retest the sample."]
+
+	for language, localized_advice in (
+		("es", "Consulte las acciones recomendadas en el informe."),
+		("hi", "रिपोर्ट में दिए गए सुझाए गए कदम देखें।"),
+		("ta", "அறிக்கையில் பரிந்துரைக்கப்பட்ட நடவடிக்கைகளைப் பார்க்கவும்."),
+		("fr", "Consultez les actions recommandées dans le rapport."),
+	):
+		text = explain_analysis(analysis, lang=language)
+
+		assert localized_advice in text
+		assert "Retest the sample." not in text
+
+
 def test_explanation_all_good_scenario() -> None:
 	analysis = AnalysisResult.model_validate(
 		{

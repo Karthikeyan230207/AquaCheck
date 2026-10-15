@@ -82,49 +82,9 @@
   transform: scale(1.05);
 }
 
-.confirmBox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 10px;
-  background: rgba(239, 68, 68, 0.14);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-}
-
-.confirmPrompt {
-  font-size: 11.5px;
-  color: #fca5a5;
-  font-weight: 700;
-}
-
-.confirmBtn,
-.cancelBtn {
-  padding: 4px 9px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 750;
-  cursor: pointer;
-  border: 0;
-  transition: opacity 140ms ease;
-}
-
-.confirmBtn {
-  background: #ef4444;
-  color: #ffffff;
-}
-
-.confirmBtn:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.cancelBtn {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ecfaff;
-}
-
-.cancelBtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+.deleteButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 .successNotice {
@@ -174,4 +134,3 @@
     justify-content: space-between;
   }
 }
-

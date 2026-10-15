@@ -437,23 +437,24 @@ Charts + Status + Explanation
 
 ### Current MVP support
 
-`POST /api/reports/analyze` connects the text-based PDF steps: upload, embedded
-text extraction, supported measurement parsing, validation, and deterministic
-analysis. The frontend's `/upload` page displays the extracted measurements,
+`POST /api/reports/analyze` connects report upload, embedded text extraction or
+OCR, supported measurement parsing, validation, and deterministic analysis for
+PDFs and images. The frontend's `/upload` page displays the extracted measurements,
 classifications, score, recommendations, a report-driven 3D particle
 visualization, and an on-demand plain-language explanation. The visualization
 is an illustration based on reported values, not a literal view of the water.
 The explanation is generated immediately from the analysis rules when requested. The upload is
-processed in memory and is not saved. Scanned PDFs and image OCR are not
-available until an OCR provider is configured. See [docs/api.md](docs/api.md)
-for the endpoint request and response details.
+processed in memory and is not saved. Scanned PDF pages and uploaded images
+are processed with Tesseract OCR. Install the Tesseract executable on the
+backend host and configure `OCR_TESSERACT_CMD` if it is not on `PATH`. See
+[docs/api.md](docs/api.md) for setup and endpoint request/response details.
 
 Supabase email/password authentication and MongoDB Atlas per-user report
 history are available when configured. Copy the environment templates and set
 the backend Atlas/Supabase credentials and frontend public Supabase/API URLs
 as described in [docs/database.md](docs/database.md). The API verifies each
 Supabase access token and only returns or saves reports for that authenticated
-user. Atlas stores analysis results and report metadata, not uploaded PDF
+user. Atlas stores analysis results and report metadata, not uploaded report
 files. Atlas hosts the managed database; the frontend and API still need their
 own web hosting.
 

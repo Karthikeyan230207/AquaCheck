@@ -20,7 +20,7 @@ app.add_middleware(
 		if origin.strip()
 	],
 	allow_credentials=True,
-	allow_methods=["GET", "POST"],
+	allow_methods=["GET", "POST", "DELETE"],
 	allow_headers=["*"],
 )
 app.include_router(reports_router)

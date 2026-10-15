@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Trash2, AlertCircle, Loader2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import AppPage from "../../components/AppPage";
 import { useAuth } from "../../hooks/useAuth";
 import styles from "./history.module.css";
@@ -20,7 +20,6 @@ export default function HistoryPage() {
   const [loadedRequest, setLoadedRequest] = useState("");
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [actionMessage, setActionMessage] = useState("");
 
   const requestKey = user && accessToken ? user.id : "";
@@ -81,7 +80,6 @@ export default function HistoryPage() {
       }
 
       setReports((prev) => prev.filter((r) => r.report_id !== reportId));
-      setConfirmDeleteId(null);
       setActionMessage("Report removed from your history.");
       setTimeout(() => setActionMessage(""), 3500);
     } catch (err) {
@@ -117,7 +115,7 @@ export default function HistoryPage() {
         </p>
       ) : loadingReports ? (
         <p>Loading your reports…</p>
-      ) : error ? (
+      ) : error && reports.length === 0 ? (
         <p className={styles.error} role="alert">
           Could not load report history: {error}
         </p>
@@ -130,14 +128,8 @@ export default function HistoryPage() {
         </>
       ) : (
         <>
-          {actionMessage && (
-            <div className={styles.successNotice} role="status">
-              {actionMessage}
-            </div>
-          )}
           <ul className={styles.list}>
             {reports.map((report) => {
-              const isConfirming = confirmDeleteId === report.report_id;
               const isDeleting = deletingId === report.report_id;
 
               return (
@@ -159,43 +151,35 @@ export default function HistoryPage() {
                         : `${report.analysis.overall_score}/100`}
                     </strong>
 
-                    {isConfirming ? (
-                      <div className={styles.confirmBox}>
-                        <span className={styles.confirmPrompt}>Delete?</span>
-                        <button
-                          type="button"
-                          className={styles.confirmBtn}
-                          disabled={isDeleting}
-                          onClick={() => handleDelete(report.report_id)}
-                        >
-                          {isDeleting ? <Loader2 size={13} className={styles.spin} /> : "Yes"}
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.cancelBtn}
-                          disabled={isDeleting}
-                          onClick={() => setConfirmDeleteId(null)}
-                        >
-                          No
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className={styles.deleteButton}
-                        onClick={() => setConfirmDeleteId(report.report_id)}
-                        title="Delete report from history"
-                        aria-label={`Delete ${report.filename}`}
-                      >
-                        <Trash2 size={16} strokeWidth={2.2} />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className={styles.deleteButton}
+                      disabled={isDeleting}
+                      aria-busy={isDeleting}
+                      onClick={() => handleDelete(report.report_id)}
+                      title="Delete report from history"
+                      aria-label={`Delete ${report.filename}`}
+                    >
+                      {isDeleting
+                        ? <Loader2 size={16} className={styles.spin} aria-hidden="true" />
+                        : <Trash2 size={16} strokeWidth={2.2} aria-hidden="true" />}
+                    </button>
                   </div>
                 </li>
               );
             })}
           </ul>
         </>
+      )}
+      {error && reports.length > 0 && (
+        <p className={styles.error} role="alert">
+          Could not delete this report: {error}
+        </p>
+      )}
+      {actionMessage && (
+        <div className={styles.successNotice} role="status">
+          {actionMessage}
+        </div>
       )}
       {user && (
         <p className={styles.newReport}>
@@ -205,4 +189,3 @@ export default function HistoryPage() {
     </AppPage>
   );
 }
-

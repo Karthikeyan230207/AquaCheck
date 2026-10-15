@@ -26,7 +26,7 @@ export default function UploadPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     if (!file) {
-      setError("Choose a PDF report to analyze.");
+      setError("Choose a PDF or image report to analyze.");
       return;
     }
 
@@ -86,8 +86,9 @@ export default function UploadPage() {
         </p>
         <h1>Analyze a water report</h1>
         <p className={styles.intro}>
-          Upload a text-based PDF to extract supported measurements and compare
-          them with AquaCheck reference ranges.
+          Upload a PDF or image of your water report. AquaCheck extracts the
+          measurements with text recognition and compares them with reference
+          ranges.
         </p>
 
         <form className={styles.uploadForm} onSubmit={handleSubmit}>
@@ -96,12 +97,12 @@ export default function UploadPage() {
               <FileText size={22} strokeWidth={2.1} />
             </span>
             <span>
-              <strong>{file ? file.name : "Choose a PDF report"}</strong>
-              <small>PDF only · scanned PDFs are not supported yet</small>
+              <strong>{file ? file.name : "Choose a PDF or image report"}</strong>
+              <small>PDF, JPG, JPEG, or PNG · scanned reports use OCR</small>
             </span>
           </label>
           <input
-            accept=".pdf,application/pdf"
+            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
             className={styles.fileInput}
             id="report-file"
             onChange={(event) => {

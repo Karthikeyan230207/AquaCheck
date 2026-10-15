@@ -10,6 +10,11 @@ from pymongo.errors import PyMongoError
 from app.analysis.analyzer import analyze_parameters
 from app.api.auth import AuthenticatedUser, get_current_user, get_optional_user
 from app.config.settings import settings
+from app.extraction.ocr_engine import (
+	OCRUnavailableError,
+	extract_text_from_image,
+	tesseract_ocr,
+)
 from app.extraction.parameter_parser import parse_parameters
 from app.extraction.pdf_extractor import extract_pdf_text
 from app.schemas.parameter import WaterParameter
@@ -143,14 +148,19 @@ async def analyze_report(
 	access token is validated with Supabase Auth before it is used as the owner.
 	"""
 	filename, extension, content_type, content = await _read_upload(file)
-	if extension != ".pdf":
-		raise HTTPException(
-			status_code=415,
-			detail="Report analysis currently supports text-based PDF files only",
-		)
 
 	try:
-		extracted = extract_pdf_text(content)
+		if extension == ".pdf":
+			extracted = await run_in_threadpool(extract_pdf_text, content)
+		else:
+			extracted_text = await run_in_threadpool(
+				extract_text_from_image,
+				content,
+				tesseract_ocr,
+			)
+			extracted = {"extracted_text": extracted_text, "page_count": 1}
+	except OCRUnavailableError as error:
+		raise HTTPException(status_code=503, detail=str(error)) from error
 	except ValueError as error:
 		raise HTTPException(status_code=422, detail=str(error)) from error
 
@@ -158,10 +168,7 @@ async def analyze_report(
 	if not parsed_parameters:
 		raise HTTPException(
 			status_code=422,
-			detail=(
-				"No supported water-quality measurements were found. "
-				"Scanned PDFs require OCR, which is not configured."
-			),
+			detail="No supported water-quality measurements were found in the report.",
 		)
 
 	parameters = [WaterParameter.model_validate(item) for item in parsed_parameters]
@@ -266,4 +273,3 @@ def delete_report(
 			detail="Report not found",
 		)
 	return {"message": "Report deleted successfully"}
-

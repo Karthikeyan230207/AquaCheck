@@ -5,6 +5,8 @@ pydantic
 pydantic-settings
 python-dotenv
 pymupdf
+pillow
+pytesseract
 pandas
 pymongo
 pytest

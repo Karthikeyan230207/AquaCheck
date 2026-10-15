@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Baby,
   BookOpen,
@@ -21,9 +21,11 @@ import {
   RefreshCw,
   ShieldCheck,
   Smile,
+  Square,
   Sparkles,
   Sprout,
   TriangleAlert,
+  Volume2,
   Waves,
   Wrench,
 } from "lucide-react";
@@ -31,11 +33,11 @@ import WaterQualityScene from "./WaterQualityScene";
 import styles from "./ReportInsights.module.css";
 
 const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "hi", label: "हिंदी" },
-  { code: "ta", label: "தமிழ்" },
-  { code: "es", label: "Español" },
-  { code: "fr", label: "Français" },
+  { code: "en", locale: "en-US", label: "English" },
+  { code: "hi", locale: "hi-IN", label: "हिंदी" },
+  { code: "ta", locale: "ta-IN", label: "தமிழ்" },
+  { code: "es", locale: "es-ES", label: "Español" },
+  { code: "fr", locale: "fr-FR", label: "Français" },
 ];
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -130,9 +132,21 @@ export default function ReportInsights({
   const [explanation, setExplanation] = useState("");
   const [explanationError, setExplanationError] = useState("");
   const [loading, setLoading] = useState(false);
+  const explanationRequestId = useRef(0);
+  const speechUtterance = useRef(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechError, setSpeechError] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedLang, setSelectedLang] = useState("en");
   const sceneRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   // Determine Overall Traffic Light Verdict
   const verdict = useMemo(() => {
@@ -257,6 +271,7 @@ export default function ReportInsights({
 
   async function requestExplanation(langOverride) {
     const lang = langOverride ?? selectedLang;
+    const requestId = ++explanationRequestId.current;
     setLoading(true);
     setExplanationError("");
 
@@ -314,25 +329,90 @@ export default function ReportInsights({
         throw new Error("The server returned an empty explanation.");
       }
 
-      setExplanation(payload.explanation);
+      if (requestId === explanationRequestId.current) {
+        setExplanation(payload.explanation);
+      }
     } catch (requestError) {
-      setExplanationError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Could not generate an explanation.",
-      );
+      if (requestId === explanationRequestId.current) {
+        setExplanationError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Could not generate an explanation.",
+        );
+      }
     } finally {
-      setLoading(false);
+      if (requestId === explanationRequestId.current) {
+        setLoading(false);
+      }
     }
   }
 
   function handleLangChange(code) {
+    stopVoice();
     setSelectedLang(code);
-    if (explanation) {
-      // Immediately regenerate in the new language
+    if (explanation || loading) {
       setExplanation("");
       requestExplanation(code);
     }
+  }
+
+  function stopVoice() {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    speechUtterance.current = null;
+    setIsSpeaking(false);
+    setSpeechError("");
+  }
+
+  function speakExplanation() {
+    if (!explanation) return;
+    if (
+      typeof window === "undefined"
+      || !("speechSynthesis" in window)
+      || !("SpeechSynthesisUtterance" in window)
+    ) {
+      setSpeechError("Voice playback is not supported in this browser.");
+      return;
+    }
+
+    stopVoice();
+    const language = LANGUAGES.find((item) => item.code === selectedLang);
+    const utterance = new window.SpeechSynthesisUtterance(
+      explanation.replace(/\s+/g, " ").trim(),
+    );
+    utterance.lang = language?.locale ?? "en-US";
+
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(
+      (voice) => voice.lang.toLowerCase() === utterance.lang.toLowerCase(),
+    ) ?? voices.find(
+      (voice) => voice.lang.toLowerCase().startsWith(`${selectedLang.toLowerCase()}-`),
+    );
+    if (preferredVoice) utterance.voice = preferredVoice;
+
+    utterance.onstart = () => {
+      if (speechUtterance.current === utterance) {
+        setIsSpeaking(true);
+      }
+    };
+    utterance.onend = () => {
+      if (speechUtterance.current === utterance) {
+        speechUtterance.current = null;
+        setIsSpeaking(false);
+      }
+    };
+    utterance.onerror = (event) => {
+      if (speechUtterance.current !== utterance) return;
+      speechUtterance.current = null;
+      setIsSpeaking(false);
+      if (event.error !== "canceled" && event.error !== "interrupted") {
+        setSpeechError("Could not play the voice. Check that your browser has a voice for this language.");
+      }
+    };
+    speechUtterance.current = utterance;
+    setSpeechError("");
+    window.speechSynthesis.speak(utterance);
   }
 
   function handleDownloadReport() {
@@ -654,9 +734,30 @@ export default function ReportInsights({
               <p key={i}>{para}</p>
             ))}
             <div className={styles.retryRow}>
+              {isSpeaking ? (
+                <button
+                  className={`${styles.btn} ${styles.btnSecondary}`}
+                  onClick={stopVoice}
+                  type="button"
+                >
+                  <Square size={15} strokeWidth={2.2} />
+                  Stop voice
+                </button>
+              ) : (
+                <button
+                  className={`${styles.btn} ${styles.btnSecondary}`}
+                  onClick={speakExplanation}
+                  type="button"
+                  title={`Listen in ${LANGUAGES.find((l) => l.code === selectedLang)?.label}`}
+                >
+                  <Volume2 size={15} strokeWidth={2.2} />
+                  Listen to explanation
+                </button>
+              )}
               <button
                 className={`${styles.btn} ${styles.btnSecondary}`}
                 onClick={() => {
+                  stopVoice();
                   setExplanation("");
                   requestExplanation();
                 }}
@@ -667,6 +768,11 @@ export default function ReportInsights({
               </button>
             </div>
           </div>
+        ) : null}
+        {speechError ? (
+          <p aria-live="polite" className={styles.error} role="alert">
+            {speechError}
+          </p>
         ) : null}
         {explanationError ? (
           <p aria-live="polite" className={styles.error} role="alert">

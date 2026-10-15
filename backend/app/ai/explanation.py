@@ -7,6 +7,7 @@ _LANG_TRANSLATIONS = {
 		"caution": "This water is mostly usable, but a few parameters are approaching or slightly exceeding recommended aesthetic limits.",
 		"danger": "Attention needed! One or more parameters in this report are outside recommended drinking safety limits.",
 		"advice_prefix": "Recommended actions:",
+		"untranslated_advice": "See the report for recommended actions.",
 		"disclaimer": "Informational health screening based on recognized standards; always consult a certified local laboratory for legal or clinical water assessments.",
 		"param_explain": {
 			"pH": "pH is {status}: acidic water can leach pipe metals, while alkaline water causes scaling.",
@@ -25,6 +26,7 @@ _LANG_TRANSLATIONS = {
 		"caution": "Esta agua es mayormente utilizable, pero algunos parámetros se acercan a los límites recomendados.",
 		"danger": "¡Se requiere atención! Uno o más parámetros están fuera de los límites de seguridad recomendados.",
 		"advice_prefix": "Acciones recomendadas:",
+		"untranslated_advice": "Consulte las acciones recomendadas en el informe.",
 		"disclaimer": "Evaluación informativa basada en estándares de salud; consulte a un profesional calificado.",
 		"param_explain": {
 			"pH": "El pH está {status}: el agua ácida desgasta tuberías y el agua alcalina crea sarro.",
@@ -43,6 +45,7 @@ _LANG_TRANSLATIONS = {
 		"caution": "यह पानी अधिकांश उपयोगों के लिए ठीक है, लेकिन कुछ पैरामीटर अनुशंसित सीमा के करीब हैं।",
 		"danger": "ध्यान दें! इस रिपोर्ट में एक या अधिक पैरामीटर सुरक्षित पेयजल सीमा से बाहर हैं।",
 		"advice_prefix": "सुझाए गए कदम:",
+		"untranslated_advice": "रिपोर्ट में दिए गए सुझाए गए कदम देखें।",
 		"disclaimer": "मान्यता प्राप्त मानकों पर आधारित सूचनात्मक जाँच; आवश्यकता पड़ने पर विशेषज्ञ से परामर्श करें।",
 		"param_explain": {
 			"pH": "pH {status} है: अम्लीय पानी पाइप को नुकसान पहुँचा सकता है, जबकि क्षारीय पानी से खारापन आता है।",
@@ -61,6 +64,7 @@ _LANG_TRANSLATIONS = {
 		"caution": "இந்த நீர் பொதுவாகப் பயன்படுத்தக்கூடியது, ஆனால் சில அளவுகள் எச்சரிக்கை வரம்பிற்கு அருகில் உள்ளன.",
 		"danger": "கவனம் தேவை! குடிநீர் பாதுகாப்பு வரம்புகளை விட சில அளவுகள் அதிகமாக உள்ளன.",
 		"advice_prefix": "பரிந்துரைக்கப்பட்ட நடவடிக்கைகள்:",
+		"untranslated_advice": "அறிக்கையில் பரிந்துரைக்கப்பட்ட நடவடிக்கைகளைப் பார்க்கவும்.",
 		"disclaimer": "அங்கீகரிக்கப்பட்ட வழிகாட்டுதல்களின் அடிப்படையில் தகவல் அறிக்கை; சிறப்பு ஆய்வக ஆலோசனையைப் பெறவும்.",
 		"param_explain": {
 			"pH": "pH {status} ஆக உள்ளது: அமிலத்தன்மை குழாய்களை அரிக்கும், காரத்தன்மை உப்பை படியச் செய்யும்.",
@@ -79,6 +83,7 @@ _LANG_TRANSLATIONS = {
 		"caution": "Cette eau est globalement utilisable, mais certains paramètres nécessitent une attention particulière.",
 		"danger": "Action requise ! Un ou plusieurs paramètres dépassent les limites de sécurité recommandées.",
 		"advice_prefix": "Actions recommandées :",
+		"untranslated_advice": "Consultez les actions recommandées dans le rapport.",
 		"disclaimer": "Dépistage informatif basé sur des normes officielles ; consultez un laboratoire certifié si nécessaire.",
 		"param_explain": {
 			"pH": "Le pH est {status} : une eau acide corrode les tuyaux, une eau basique entartre.",
@@ -95,7 +100,8 @@ _LANG_TRANSLATIONS = {
 
 
 def explain_analysis(analysis: AnalysisResult, lang: str = "en") -> str:
-	t = _LANG_TRANSLATIONS.get(lang.lower(), _LANG_TRANSLATIONS["en"])
+	language = lang.lower()
+	t = _LANG_TRANSLATIONS.get(language, _LANG_TRANSLATIONS["en"])
 
 	if not analysis.parameters:
 		return t["empty"]
@@ -120,13 +126,13 @@ def explain_analysis(analysis: AnalysisResult, lang: str = "en") -> str:
 		if p.status in {"outside_range", "attention"}:
 			template = t["param_explain"].get(p.parameter)
 			status_word = "elevated / out of range" if p.status == "outside_range" else "borderline"
-			if lang == "es":
+			if language == "es":
 				status_word = "fuera de rango" if p.status == "outside_range" else "en observación"
-			elif lang == "hi":
+			elif language == "hi":
 				status_word = "सीमा से बाहर" if p.status == "outside_range" else "चेतावनी स्तर पर"
-			elif lang == "ta":
+			elif language == "ta":
 				status_word = "அளவுக்கு அதிகமாக" if p.status == "outside_range" else "கவனிக்கப்பட வேண்டிய அளவில்"
-			elif lang == "fr":
+			elif language == "fr":
 				status_word = "hors limites" if p.status == "outside_range" else "à surveiller"
 
 			if template:
@@ -136,7 +142,10 @@ def explain_analysis(analysis: AnalysisResult, lang: str = "en") -> str:
 		paragraphs.append(" ".join(findings))
 
 	if analysis.recommendations:
-		actions = "; ".join(analysis.recommendations[:3])
+		if language == "en":
+			actions = "; ".join(analysis.recommendations[:3])
+		else:
+			actions = t["untranslated_advice"]
 		paragraphs.append(f"{t['advice_prefix']} {actions}")
 
 	paragraphs.append(t["disclaimer"])

@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.api import auth as auth_api
 from app.api import reports as reports_api
+from app.extraction.ocr_engine import OCRUnavailableError
 from app.main import app
 
 
@@ -81,6 +82,21 @@ def test_health_endpoint() -> None:
 	assert response.json() == {"status": "ok"}
 
 
+def test_cors_allows_browser_delete_preflight() -> None:
+	response = client.options(
+		"/api/reports/report-id",
+		headers={
+			"Origin": "http://localhost:3000",
+			"Access-Control-Request-Method": "DELETE",
+			"Access-Control-Request-Headers": "authorization",
+		},
+	)
+
+	assert response.status_code == 200
+	assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+	assert "DELETE" in response.headers["access-control-allow-methods"]
+
+
 def test_swagger_docs_are_available() -> None:
 	response = client.get("/docs")
 
@@ -150,6 +166,80 @@ def test_report_analysis_extracts_and_analyzes_pdf_measurements() -> None:
 		"within_range",
 	]
 	assert result["analysis"]["overall_score"] == 100.0
+
+
+def test_report_analysis_ocr_extracts_and_analyzes_image_measurements(monkeypatch) -> None:
+	image_data = b"\x89PNG\r\n\x1a\nmock-image-data"
+	seen_images: list[bytes] = []
+
+	def fake_ocr(content: bytes) -> str:
+		seen_images.append(content)
+		return (
+			"pH\nRaw\n7.8\nEnd\n7.5\n"
+			"Dissolved Solids (TDS)\nRaw\n580\nEnd\n390\n"
+			"Iron (as Fe)\nRaw\n0.18\nEnd\n0.05"
+		)
+
+	monkeypatch.setattr(reports_api, "tesseract_ocr", fake_ocr)
+	response = client.post(
+		"/api/reports/analyze",
+		files={"file": ("water-report.png", image_data, "image/png")},
+	)
+
+	assert response.status_code == 200
+	result = response.json()
+	assert seen_images == [image_data]
+	assert result["filename"] == "water-report.png"
+	assert result["content_type"] == "image/png"
+	assert result["page_count"] == 1
+	assert [
+		(item["parameter"], item["value"])
+		for item in result["extracted_parameters"]
+	] == [
+		("pH", 7.5),
+		("TDS", 390.0),
+		("Iron", 0.05),
+	]
+	assert result["analysis"]["overall_score"] == 100.0
+
+
+def test_report_image_analysis_returns_service_unavailable_when_ocr_is_missing(monkeypatch) -> None:
+	def unavailable_ocr(_: bytes) -> str:
+		raise OCRUnavailableError("Tesseract was not found.")
+
+	monkeypatch.setattr(reports_api, "tesseract_ocr", unavailable_ocr)
+	response = client.post(
+		"/api/reports/analyze",
+		files={
+			"file": (
+				"water-report.jpg",
+				b"\xff\xd8\xffmock-image-data",
+				"image/jpeg",
+			)
+		},
+	)
+
+	assert response.status_code == 503
+	assert response.json()["detail"] == "Tesseract was not found."
+
+
+def test_report_analysis_returns_service_unavailable_when_ocr_is_missing(monkeypatch) -> None:
+	def unavailable_ocr(_: bytes) -> dict[str, object]:
+		raise OCRUnavailableError("Tesseract was not found.")
+
+	monkeypatch.setattr(reports_api, "extract_pdf_text", unavailable_ocr)
+	document = fitz.open()
+	document.new_page()
+	pdf_data = document.tobytes()
+	document.close()
+
+	response = client.post(
+		"/api/reports/analyze",
+		files={"file": ("scanned-report.pdf", pdf_data, "application/pdf")},
+	)
+
+	assert response.status_code == 503
+	assert response.json()["detail"] == "Tesseract was not found."
 
 
 def test_report_analysis_uses_average_from_parameter_range_table() -> None:
@@ -366,13 +456,14 @@ def test_report_analysis_rejects_pdf_without_supported_measurements() -> None:
 	assert "No supported water-quality measurements" in response.json()["detail"]
 
 
-def test_report_analysis_rejects_images_until_ocr_is_configured() -> None:
+def test_report_analysis_rejects_unreadable_images() -> None:
 	response = client.post(
 		"/api/reports/analyze",
 		files={"file": ("report.png", b"\x89PNG\r\n\x1a\nimage", "image/png")},
 	)
 
-	assert response.status_code == 415
+	assert response.status_code == 422
+	assert response.json()["detail"] == "The uploaded image is not readable"
 
 
 def test_analysis_rejects_unknown_parameter() -> None:
@@ -464,4 +555,3 @@ def test_delete_report_not_found(monkeypatch) -> None:
 	response = client.delete("/api/reports/nonexistent-id")
 	assert response.status_code == 404
 	assert response.json()["detail"] == "Report not found"
-
