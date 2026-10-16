@@ -128,6 +128,8 @@ export default function UploadPage() {
           </p>
         )}
 
+        {!result && <ReportInsights analysis={null} />}
+
         {result && (
           <AnalysisResult
             result={result}

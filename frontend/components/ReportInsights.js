@@ -34,13 +34,20 @@ import styles from "./ReportInsights.module.css";
 
 const LANGUAGES = [
   { code: "en", locale: "en-US", label: "English" },
-  { code: "hi", locale: "hi-IN", label: "हिंदी" },
   { code: "ta", locale: "ta-IN", label: "தமிழ்" },
-  { code: "es", locale: "es-ES", label: "Español" },
-  { code: "fr", locale: "fr-FR", label: "Français" },
 ];
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const MANUAL_PARAMETERS = [
+  { parameter: "pH", unit: "", step: "any" },
+  { parameter: "TDS", unit: "mg/L", step: "any" },
+  { parameter: "Turbidity", unit: "NTU", step: "any" },
+  { parameter: "Total Hardness", unit: "mg/L", step: "any" },
+  { parameter: "Chloride", unit: "mg/L", step: "any" },
+  { parameter: "Fluoride", unit: "mg/L", step: "any" },
+  { parameter: "Nitrate", unit: "mg/L", step: "any" },
+  { parameter: "Iron", unit: "mg/L", step: "any" },
+];
 
 // Ultra-clear kid/family explanations (analogies anyone can understand)
 const TODDLER_EXPLANATIONS = {
@@ -134,14 +141,19 @@ export default function ReportInsights({
   const [loading, setLoading] = useState(false);
   const explanationRequestId = useRef(0);
   const speechUtterance = useRef(null);
+  const speechAttempt = useRef(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speechError, setSpeechError] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedLang, setSelectedLang] = useState("en");
+  const [manualAnalysis, setManualAnalysis] = useState(null);
   const sceneRef = useRef(null);
+  const currentAnalysis = manualAnalysis ?? analysis;
+  const hasAnalysis = Boolean(currentAnalysis?.parameters?.length);
 
   useEffect(() => {
     return () => {
+      speechAttempt.current += 1;
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
@@ -150,7 +162,7 @@ export default function ReportInsights({
 
   // Determine Overall Traffic Light Verdict
   const verdict = useMemo(() => {
-    if (!analysis?.parameters || analysis.parameters.length === 0) {
+    if (!currentAnalysis?.parameters || currentAnalysis.parameters.length === 0) {
       return {
         level: "unknown",
         badge: "Needs More Information",
@@ -162,8 +174,8 @@ export default function ReportInsights({
       };
     }
 
-    const hasDanger = analysis.parameters.some((p) => p.status === "outside_range");
-    const hasWarning = analysis.parameters.some((p) => p.status === "attention");
+    const hasDanger = currentAnalysis.parameters.some((p) => p.status === "outside_range");
+    const hasWarning = currentAnalysis.parameters.some((p) => p.status === "attention");
 
     if (hasDanger) {
       return {
@@ -198,22 +210,22 @@ export default function ReportInsights({
       bg: "rgba(52, 211, 153, 0.1)",
       icon: ShieldCheck,
     };
-  }, [analysis]);
+  }, [currentAnalysis]);
 
   // Group concerning parameters
   const concerningParameters = useMemo(() => {
-    if (!analysis?.parameters) return [];
-    return analysis.parameters.filter(
+    if (!currentAnalysis?.parameters) return [];
+    return currentAnalysis.parameters.filter(
       (p) => p.status === "outside_range" || p.status === "attention",
     );
-  }, [analysis]);
+  }, [currentAnalysis]);
 
   // Concrete Action Checklist
   const actionChecklist = useMemo(() => {
     const actions = [];
-    if (!analysis?.parameters) return actions;
+    if (!currentAnalysis?.parameters) return actions;
 
-    const nit = analysis.parameters.find((p) => p.parameter === "Nitrate" && p.status !== "within_range");
+    const nit = currentAnalysis.parameters.find((p) => p.parameter === "Nitrate" && p.status !== "within_range");
     if (nit) {
       actions.push({
         priority: "CRITICAL",
@@ -222,7 +234,7 @@ export default function ReportInsights({
       });
     }
 
-    const turb = analysis.parameters.find((p) => p.parameter === "Turbidity" && p.status !== "within_range");
+    const turb = currentAnalysis.parameters.find((p) => p.parameter === "Turbidity" && p.status !== "within_range");
     if (turb) {
       actions.push({
         priority: "HIGH",
@@ -231,7 +243,7 @@ export default function ReportInsights({
       });
     }
 
-    const fe = analysis.parameters.find((p) => p.parameter === "Iron" && p.status !== "within_range");
+    const fe = currentAnalysis.parameters.find((p) => p.parameter === "Iron" && p.status !== "within_range");
     if (fe) {
       actions.push({
         priority: "MEDIUM",
@@ -240,7 +252,7 @@ export default function ReportInsights({
       });
     }
 
-    const tds = analysis.parameters.find((p) => p.parameter === "TDS" && p.status !== "within_range");
+    const tds = currentAnalysis.parameters.find((p) => p.parameter === "TDS" && p.status !== "within_range");
     if (tds) {
       actions.push({
         priority: "MEDIUM",
@@ -249,7 +261,7 @@ export default function ReportInsights({
       });
     }
 
-    const hard = analysis.parameters.find((p) => p.parameter === "Total Hardness" && p.status !== "within_range");
+    const hard = currentAnalysis.parameters.find((p) => p.parameter === "Total Hardness" && p.status !== "within_range");
     if (hard) {
       actions.push({
         priority: "LOW",
@@ -267,7 +279,7 @@ export default function ReportInsights({
     }
 
     return actions;
-  }, [analysis]);
+  }, [currentAnalysis]);
 
   async function requestExplanation(langOverride) {
     const lang = langOverride ?? selectedLang;
@@ -278,7 +290,7 @@ export default function ReportInsights({
     // Sanitize the analysis to match the exact AnalysisResult schema expected
     // by the backend (extra="forbid" means any unexpected field → 422 error)
     const sanitizedAnalysis = {
-      parameters: (analysis?.parameters ?? []).map((p) => ({
+      parameters: (currentAnalysis?.parameters ?? []).map((p) => ({
         parameter: p.parameter,
         value: p.value ?? null,
         unit: p.unit ?? "",
@@ -288,9 +300,9 @@ export default function ReportInsights({
         permissible_minimum: p.permissible_minimum ?? null,
         permissible_maximum: p.permissible_maximum ?? null,
       })),
-      overall_score: analysis?.overall_score ?? null,
-      score_method: analysis?.score_method ?? "unspecified",
-      recommendations: analysis?.recommendations ?? [],
+      overall_score: currentAnalysis?.overall_score ?? null,
+      score_method: currentAnalysis?.score_method ?? "unspecified",
+      recommendations: currentAnalysis?.recommendations ?? [],
     };
 
     try {
@@ -340,6 +352,7 @@ export default function ReportInsights({
             : "Could not generate an explanation.",
         );
       }
+
     } finally {
       if (requestId === explanationRequestId.current) {
         setLoading(false);
@@ -357,6 +370,7 @@ export default function ReportInsights({
   }
 
   function stopVoice() {
+    speechAttempt.current += 1;
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
@@ -365,7 +379,7 @@ export default function ReportInsights({
     setSpeechError("");
   }
 
-  function speakExplanation() {
+  async function speakExplanation() {
     if (!explanation) return;
     if (
       typeof window === "undefined"
@@ -377,19 +391,47 @@ export default function ReportInsights({
     }
 
     stopVoice();
+    const attempt = ++speechAttempt.current;
     const language = LANGUAGES.find((item) => item.code === selectedLang);
     const utterance = new window.SpeechSynthesisUtterance(
       explanation.replace(/\s+/g, " ").trim(),
     );
     utterance.lang = language?.locale ?? "en-US";
 
-    const voices = window.speechSynthesis.getVoices();
+    const synthesis = window.speechSynthesis;
+    let voices = synthesis.getVoices();
+    if (!voices.length) {
+      voices = await new Promise((resolve) => {
+        const timeout = window.setTimeout(() => {
+          synthesis.removeEventListener("voiceschanged", onVoicesChanged);
+          resolve(synthesis.getVoices());
+        }, 1500);
+        const onVoicesChanged = () => {
+          const availableVoices = synthesis.getVoices();
+          if (availableVoices.length) {
+            window.clearTimeout(timeout);
+            synthesis.removeEventListener("voiceschanged", onVoicesChanged);
+            resolve(availableVoices);
+          }
+        };
+        synthesis.addEventListener("voiceschanged", onVoicesChanged);
+      });
+    }
+    if (attempt !== speechAttempt.current) return;
+
     const preferredVoice = voices.find(
       (voice) => voice.lang.toLowerCase() === utterance.lang.toLowerCase(),
-    ) ?? voices.find(
-      (voice) => voice.lang.toLowerCase().startsWith(`${selectedLang.toLowerCase()}-`),
-    );
-    if (preferredVoice) utterance.voice = preferredVoice;
+    ) ?? voices.find((voice) => {
+      const voiceLanguage = voice.lang.toLowerCase();
+      return voiceLanguage === selectedLang || voiceLanguage.startsWith(`${selectedLang}-`);
+    });
+    if (!preferredVoice) {
+      setSpeechError(
+        `No ${language?.label ?? "matching language"} voice is installed or enabled in this browser.`,
+      );
+      return;
+    }
+    utterance.voice = preferredVoice;
 
     utterance.onstart = () => {
       if (speechUtterance.current === utterance) {
@@ -424,6 +466,10 @@ export default function ReportInsights({
     }
   }
 
+  if (!hasAnalysis) {
+    return <ManualParameterForm onAnalysis={setManualAnalysis} />;
+  }
+
   return (
     <section aria-label="Simple water quality insights and action plan" className={styles.insights}>
       
@@ -449,7 +495,7 @@ export default function ReportInsights({
             <span className={styles.scorePill}>
               Water Health Score:{" "}
               <strong>
-                {analysis.overall_score != null ? `${analysis.overall_score}/100` : "Needs more data"}
+                {currentAnalysis.overall_score != null ? `${currentAnalysis.overall_score}/100` : "Needs more data"}
               </strong>
             </span>
           </div>
@@ -504,7 +550,7 @@ export default function ReportInsights({
         </div>
 
         <div className={styles.friendlyGrid}>
-          {analysis.parameters.map((param) => {
+          {currentAnalysis.parameters.map((param) => {
             const info = TODDLER_EXPLANATIONS[param.parameter] || {
               title: param.parameter,
               simple: "A water test measurement.",
@@ -594,7 +640,7 @@ export default function ReportInsights({
         </div>
 
         <WaterQualityScene
-          parameters={analysis.parameters}
+          parameters={currentAnalysis.parameters}
           viewMode={viewMode}
           selectedParameterName={selectedParam}
           onSelectParameter={(paramName) => {
@@ -662,7 +708,7 @@ export default function ReportInsights({
                 </tr>
               </thead>
               <tbody>
-                {analysis.parameters.map((param) => (
+                {currentAnalysis.parameters.map((param) => (
                   <tr key={param.parameter}>
                     <td><strong>{param.parameter}</strong></td>
                     <td>{param.value ?? "Unavailable"} {param.unit}</td>
@@ -781,6 +827,94 @@ export default function ReportInsights({
         ) : null}
       </div>
 
+    </section>
+  );
+}
+
+function ManualParameterForm({ onAnalysis }) {
+  const [values, setValues] = useState(() =>
+    Object.fromEntries(MANUAL_PARAMETERS.map(({ parameter }) => [parameter, ""])),
+  );
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const parameters = MANUAL_PARAMETERS.map(({ parameter, unit }) => ({
+        parameter,
+        value: Number(values[parameter]),
+        unit,
+      }));
+      const response = await fetch(`${API_BASE_URL}/api/analysis/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parameters }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        const detail = Array.isArray(payload.detail)
+          ? payload.detail.map((issue) => issue.msg).join("; ")
+          : payload.detail;
+        throw new Error(detail || `Analysis failed (${response.status}).`);
+      }
+      onAnalysis(payload);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not analyze the entered measurements.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <section aria-label="Enter water quality measurements" className={styles.manualEntry}>
+      <div>
+        <span className={styles.pillTag}>MANUAL WATER TEST</span>
+        <h2 className={styles.actionPlanTitle}>No report? Enter your 8 measurements</h2>
+        <p className={styles.intro}>
+          Enter the values from your water test. Units are shown beside each field.
+        </p>
+      </div>
+      <form className={styles.manualForm} onSubmit={handleSubmit}>
+        {MANUAL_PARAMETERS.map(({ parameter, unit, step }) => (
+          <label
+            className={styles.manualField}
+            htmlFor={`manual-${parameter.toLowerCase().replace(/\s+/g, "-")}`}
+            key={parameter}
+          >
+            <span>{parameter}{unit ? ` (${unit})` : ""}</span>
+            <input
+              id={`manual-${parameter.toLowerCase().replace(/\s+/g, "-")}`}
+              name={parameter}
+              onChange={(event) =>
+                setValues((previous) => ({ ...previous, [parameter]: event.target.value }))
+              }
+              required
+              step={step}
+              type="number"
+              value={values[parameter]}
+            />
+          </label>
+        ))}
+        <button
+          className={`${styles.btn} ${styles.btnPrimary}`}
+          disabled={isSubmitting}
+          type="submit"
+        >
+          {isSubmitting ? "Analyzing measurements…" : "Analyze measurements"}
+        </button>
+      </form>
+      {error ? (
+        <p aria-live="polite" className={styles.error} role="alert">{error}</p>
+      ) : null}
     </section>
   );
 }

@@ -4,6 +4,50 @@
   margin-top: 8px;
 }
 
+.manualEntry {
+  display: grid;
+  gap: 18px;
+  padding: 24px 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--grad-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.manualForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.manualField {
+  display: grid;
+  gap: 7px;
+  color: var(--text-strong);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.manualField input {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: rgba(8, 30, 46, 0.72);
+  color: var(--text-strong);
+  font: inherit;
+}
+
+.manualField input:focus {
+  border-color: var(--primary);
+  outline: 3px solid rgba(56, 189, 248, 0.16);
+}
+
+.manualForm > button {
+  justify-self: start;
+}
+
 /* ============================================================
    Unified button system — every action button shares these rules
    ============================================================ */
@@ -735,6 +779,12 @@
 }
 
 @media (max-width: 650px) {
+  .manualForm {
+    grid-template-columns: 1fr;
+  }
+  .manualForm > button {
+    width: 100%;
+  }
   .verdictBanner {
     flex-direction: column;
     text-align: center;
