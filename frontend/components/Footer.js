@@ -40,7 +40,6 @@ export default function Footer() {
                 <Link href="/">Home Overview</Link>
               </li>
               <li>
-                <Link href="/dashboard">Water Dashboard</Link>
               </li>
               <li>
                 <Link href="/upload">Analyze PDF Report</Link>
@@ -126,7 +125,7 @@ export default function Footer() {
           <div className={styles.bottomLinks}>
             <Link href="/upload">Start Screening</Link>
             <span aria-hidden="true">&bull;</span>
-            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/history">Saved History</Link>
             <span aria-hidden="true">&bull;</span>
             <Link href="/login">Sign In</Link>
           </div>

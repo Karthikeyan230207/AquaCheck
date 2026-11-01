@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ArrowLeft, LogIn, Calendar, Layers, AlertCircle, Loader2 } from "lucide-react";
 import AppPage from "../../../components/AppPage";
 import ReportInsights from "../../../components/ReportInsights";
 import { useAuth } from "../../../hooks/useAuth";
@@ -64,68 +65,86 @@ export default function ReportPage() {
 
   return (
     <AppPage
-      description="Your saved water report analysis."
-      eyebrow="SAVED ANALYSIS"
-      title={report?.filename ?? "Report"}
+      wide={true}
+      description={
+        report
+          ? `Analysis certificate archived on ${new Date(report.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}.`
+          : "Saved water quality laboratory analysis."
+      }
+      eyebrow="LABORATORY REPORT"
+      title={report?.filename ?? "Water Quality Report"}
+      actions={
+        <Link href="/history" className={styles.btnBackTop}>
+          <ArrowLeft size={15} />
+          <span>Back to History</span>
+        </Link>
+      }
     >
       {authLoading || loadingReport ? (
-        <p>Loading saved report…</p>
+        <div className={styles.stateCard}>
+          <Loader2 size={24} className={styles.spin} />
+          <p>Loading saved report analysis…</p>
+        </div>
       ) : authError ? (
-        <p className={styles.error} role="alert">
-          Could not verify your sign-in status: {authError}
-        </p>
+        <div className={styles.errorCard} role="alert">
+          <AlertCircle size={20} />
+          <p>Could not verify your sign-in session: {authError}</p>
+        </div>
       ) : !user ? (
-        <>
-          <p>Sign in to access saved report results.</p>
-          <p>
-            <Link href="/login">Sign in</Link>
-          </p>
-        </>
+        <div className={styles.stateCard}>
+          <LogIn size={26} />
+          <h3>Authentication Required</h3>
+          <p>Sign in to your account to access your archived laboratory reports.</p>
+          <Link href="/login" className={styles.btnPrimary}>
+            <LogIn size={15} />
+            <span>Sign In to Account</span>
+          </Link>
+        </div>
       ) : !accessToken ? (
-        <p className={styles.error} role="alert">
-          Your sign-in session is missing an access token. Sign out, then sign
-          in again.
-        </p>
+        <div className={styles.errorCard} role="alert">
+          <AlertCircle size={20} />
+          <p>Your session is missing an access token. Please sign in again.</p>
+          <Link href="/login" className={styles.btnPrimary}>
+            <span>Sign In Again</span>
+          </Link>
+        </div>
       ) : error ? (
-        <>
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-          <p>
-            <Link href="/history">Back to history</Link>
-          </p>
-        </>
+        <div className={styles.stateCard}>
+          <AlertCircle size={26} />
+          <h3>Unable to Load Report</h3>
+          <p>{error}</p>
+          <Link href="/history" className={styles.btnBack}>
+            <ArrowLeft size={15} />
+            <span>Return to History</span>
+          </Link>
+        </div>
       ) : report ? (
-        <ReportResult report={report} />
+        <div className={styles.reportContainer}>
+          <div className={styles.reportMetaBar}>
+            <div className={styles.metaItems}>
+              <span className={styles.metaChip}>
+                <Calendar size={14} />
+                <span>{new Date(report.created_at).toLocaleString()}</span>
+              </span>
+              <span className={styles.metaChip}>
+                <Layers size={14} />
+                <span>{report.page_count} {report.page_count === 1 ? "page" : "pages"}</span>
+              </span>
+            </div>
+          </div>
+
+          <ReportInsights
+            analysis={report.analysis}
+            reportMetadata={report}
+            fileName={report.filename || `Report_${report.id}`}
+          />
+        </div>
       ) : (
-        <p>Loading saved report…</p>
+        <div className={styles.stateCard}>
+          <Loader2 size={24} className={styles.spin} />
+          <p>Loading saved report…</p>
+        </div>
       )}
     </AppPage>
-  );
-}
-
-function ReportResult({ report }) {
-  const analysis = report.analysis;
-  const score =
-    analysis.overall_score == null
-      ? "Not enough data"
-      : `${analysis.overall_score}/100`;
-
-  return (
-    <>
-      <p className={styles.meta}>
-        Analyzed {new Date(report.created_at).toLocaleString()} · {report.page_count}{" "}
-        page{report.page_count === 1 ? "" : "s"}
-      </p>
-      <p className={styles.score}>Water score: {score}</p>
-      <ReportInsights
-        analysis={analysis}
-        reportMetadata={report}
-        fileName={report.filename || `Report_${report.id}`}
-      />
-      <p className={styles.back}>
-        <Link href="/history">Back to history</Link>
-      </p>
-    </>
   );
 }

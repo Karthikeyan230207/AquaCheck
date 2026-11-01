@@ -6,7 +6,6 @@ import { useState } from "react";
 import {
   Droplets,
   Home,
-  LayoutDashboard,
   History as HistoryIcon,
   LogOut,
   Menu,
@@ -20,14 +19,13 @@ import styles from "./Navbar.module.css";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/upload", label: "Analyze", icon: Upload },
   { href: "/history", label: "History", icon: HistoryIcon },
   { href: "/profile", label: "Profile", icon: UserIcon },
 ];
 
 /**
- * Unified Navigation Bar used across Home, Dashboard, and all application pages.
+ * Unified navigation bar used across the home page and application pages.
  * Guarantees 100% consistent format, styling, branding, and auth state.
  */
 export default function Navbar() {
@@ -75,6 +73,7 @@ export default function Navbar() {
                 key={href}
                 className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
                 href={href}
+                aria-current={active ? "page" : undefined}
               >
                 <Icon size={16} strokeWidth={2.2} aria-hidden="true" />
                 {label}
@@ -137,6 +136,7 @@ export default function Navbar() {
                 key={href}
                 className={`${styles.mobileNavLink} ${active ? styles.navLinkActive : ""}`}
                 href={href}
+                aria-current={active ? "page" : undefined}
                 onClick={closeMenu}
               >
                 <Icon size={17} strokeWidth={2.2} aria-hidden="true" />

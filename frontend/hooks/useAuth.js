@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import {
   getSupabaseClient,
   hasSupabaseConfiguration,
 } from "../lib/supabase";
 
-export function useAuth() {
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [accessToken, setAccessToken] = useState("");
   const [loading, setLoading] = useState(hasSupabaseConfiguration);
@@ -60,5 +62,17 @@ export function useAuth() {
     };
   }, []);
 
-  return { user, accessToken, loading, error };
+  return (
+    <AuthContext.Provider value={{ user, accessToken, loading, error }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const auth = useContext(AuthContext);
+  if (!auth) {
+    throw new Error("useAuth must be used within the root AuthProvider.");
+  }
+  return auth;
 }

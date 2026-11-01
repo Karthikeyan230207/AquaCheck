@@ -119,6 +119,11 @@ export default function WaterQualityScene({
     let renderer;
     let animationFrame;
     let resizeObserver;
+    let intersectionObserver;
+    let sceneCleanup;
+    let resumeRender;
+    let sceneStarted = false;
+    let isInView = false;
     let scene;
     let camera;
     let glassGroup;
@@ -145,7 +150,8 @@ export default function WaterQualityScene({
           antialias: true,
           powerPreference: "low-power",
         });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        const pixelRatioLimit = window.innerWidth <= 760 ? 1 : 1.5;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioLimit));
         renderer.setClearColor(0x000000, 0);
         host.innerHTML = "";
         host.appendChild(renderer.domElement);
@@ -424,20 +430,35 @@ export default function WaterQualityScene({
         host.addEventListener("pointerup", handlePointerUp);
         host.addEventListener("pointercancel", handlePointerCancel);
 
+        const minFrameInterval = 1000 / 30;
+        let lastFrameTime = 0;
         const render = () => {
-          if (disposed) return;
-          clock.t += 0.016;
+          if (disposed || !isInView) return;
+
+          const now = performance.now();
+          if (now - lastFrameTime < minFrameInterval) {
+            animationFrame = window.requestAnimationFrame(render);
+            return;
+          }
+          const frameFactor = lastFrameTime
+            ? Math.min((now - lastFrameTime) / (1000 / 60), 3)
+            : 1;
+          lastFrameTime = now;
+          clock.t += 0.016 * frameFactor;
 
           if (!isDragging) {
             // Apply inertia with smooth damping
-            velocityY *= 0.92;
-            velocityX *= 0.92;
-            rotationY += velocityY;
-            rotationX = Math.max(-0.65, Math.min(0.65, rotationX + velocityX));
+            velocityY *= 0.92 ** frameFactor;
+            velocityX *= 0.92 ** frameFactor;
+            rotationY += velocityY * frameFactor;
+            rotationX = Math.max(
+              -0.65,
+              Math.min(0.65, rotationX + velocityX * frameFactor),
+            );
 
             // Gentle ambient rotation when not interacting
             if (Math.abs(velocityY) < 0.0004 && !reducedMotion) {
-              rotationY += 0.002;
+              rotationY += 0.002 * frameFactor;
             }
           }
 
@@ -455,12 +476,13 @@ export default function WaterQualityScene({
               m.position.y = base.y + Math.sin(clock.t * ud.speed + ud.phase) * 0.09;
               m.position.x = base.x + Math.sin(clock.t * ud.speed * 0.7 + ud.phase) * 0.05;
               m.position.z = base.z + Math.cos(clock.t * ud.speed * 0.6 + ud.phase) * 0.05;
-              m.rotation.y += ud.spin;
+              m.rotation.y += ud.spin * frameFactor;
             });
           }
           renderer.render(scene, camera);
           animationFrame = window.requestAnimationFrame(render);
         };
+        resumeRender = render;
         render();
 
         return () => {
@@ -478,11 +500,41 @@ export default function WaterQualityScene({
       }
     }
 
-    startScene();
+    const host = hostRef.current;
+    const beginScene = () => {
+      if (sceneStarted || disposed) return;
+      sceneStarted = true;
+      startScene().then((cleanup) => {
+        if (disposed) cleanup?.();
+        else sceneCleanup = cleanup;
+      });
+    };
+
+    if (host && "IntersectionObserver" in window) {
+      intersectionObserver = new IntersectionObserver(
+        ([entry]) => {
+          isInView = entry.isIntersecting;
+          if (isInView) {
+            beginScene();
+            if (sceneStarted && renderer) resumeRender?.();
+          } else if (animationFrame) {
+            window.cancelAnimationFrame(animationFrame);
+            animationFrame = null;
+          }
+        },
+        { rootMargin: "120px 0px" },
+      );
+      intersectionObserver.observe(host);
+    } else {
+      isInView = true;
+      beginScene();
+    }
 
     return () => {
       disposed = true;
+      intersectionObserver?.disconnect();
       window.cancelAnimationFrame(animationFrame);
+      sceneCleanup?.();
       resizeObserver?.disconnect();
       if (renderer) {
         renderer.dispose();

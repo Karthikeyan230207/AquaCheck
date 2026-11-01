@@ -3,64 +3,66 @@
    ============================================================ */
 
 :root {
-  /* Backgrounds */
-  --bg-0: #03101d;
-  --bg-1: #06243a;
-  --bg-2: #0a3554;
+  --font-geist-sans: "Segoe UI";
+  --font-geist-mono: Consolas;
+  /* High-fidelity clinical water color system (human-grade palette) */
+  --bg-0: #07131d;
+  --bg-1: #0a1b27;
+  --bg-2: #0c202c;
 
-  /* Glass surfaces */
-  --surface: rgba(8, 30, 46, 0.66);
-  --surface-2: rgba(11, 39, 58, 0.72);
-  --surface-3: rgba(14, 47, 68, 0.8);
-  --surface-solid: #0a2537;
+  /* Refined laboratory glass surfaces */
+  --surface: rgba(10, 27, 39, 0.9);
+  --surface-2: rgba(14, 34, 47, 0.94);
+  --surface-3: rgba(20, 44, 58, 0.96);
+  --surface-solid: #0a1b27;
 
-  /* Brand */
-  --primary: #38bdf8;
-  --primary-strong: #0ea5e9;
-  --primary-deep: #1b9ee8;
-  --accent: #2dd4bf;
-  --accent-soft: #a7f3d0;
-  --cyan: #7fe6ff;
+  /* Brand: Pristine clean water tones */
+  --primary: #70bfd0;
+  --primary-strong: #56a8bb;
+  --primary-deep: #397f91;
+  --accent: #72b9ad;
+  --accent-soft: #9bcfc4;
+  --cyan: #83c7d5;
 
-  /* Text */
-  --text: #e6f4fb;
-  --text-strong: #f7fdff;
-  --muted: #9dbdd0;
-  --muted-2: #7ea2b6;
+  /* Typography: High-contrast legible clinical hierarchy */
+  --text: #dce6eb;
+  --text-strong: #f3f7f9;
+  --muted: #a8b7c0;
+  --muted-2: #81939e;
 
-  /* Lines & effects */
-  --border: rgba(125, 211, 252, 0.16);
-  --border-strong: rgba(125, 211, 252, 0.3);
-  --line: rgba(125, 211, 252, 0.14);
-  --ring: rgba(56, 189, 248, 0.55);
-  --shadow-lg: 0 30px 80px rgba(1, 14, 26, 0.5);
-  --shadow-md: 0 18px 40px rgba(1, 14, 26, 0.35);
-  --shadow-sm: 0 8px 20px rgba(1, 14, 26, 0.28);
+  /* Precise structural lines & elevation */
+  --border: rgba(163, 181, 193, 0.16);
+  --border-strong: rgba(163, 181, 193, 0.28);
+  --line: rgba(163, 181, 193, 0.12);
+  --ring: rgba(112, 191, 208, 0.42);
+  --shadow-lg: 0 18px 44px rgba(1, 10, 17, 0.34);
+  --shadow-md: 0 10px 26px rgba(1, 10, 17, 0.28);
+  --shadow-sm: 0 4px 12px rgba(1, 10, 17, 0.22);
 
-  /* Status */
-  --success: #34d399;
-  --success-bg: rgba(52, 211, 153, 0.14);
-  --warning: #fbbf24;
-  --warning-bg: rgba(251, 191, 36, 0.14);
-  --danger: #f87171;
-  --danger-bg: rgba(248, 113, 113, 0.14);
+  /* Standards & Health Indicators */
+  --success: #79c49d;
+  --success-bg: rgba(121, 196, 157, 0.12);
+  --warning: #d5b36f;
+  --warning-bg: rgba(213, 179, 111, 0.12);
+  --danger: #d88e8b;
+  --danger-bg: rgba(216, 142, 139, 0.12);
 
   /* Radii */
-  --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 20px;
-  --r-xl: 26px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
   --r-full: 999px;
 
-  /* Backwards-compatible aliases (used by legacy CSS modules) */
+  /* Backwards-compatible aliases */
   --bg-deep: var(--bg-0);
   --bg-mid: var(--bg-1);
-  --card: #f4fbff;
-  --card-text: #10314c;
+  --card: #f8fafc;
+  --card-text: #0f172a;
 
-  /* Gradients */
-  --grad-primary: linear-gradient(135deg, #7fe6ff 0%, #2dd4bf 100%);
-  --grad-surface: linear-gradient(180deg, rgba(11, 39, 58, 0.72), rgba(6, 26, 40, 0.66));
+  /* Human-crafted subtle gradients */
+  --grad-primary: linear-gradient(135deg, #83c7d5 0%, #69b6aa 100%);
+  --grad-surface: linear-gradient(180deg, rgba(14, 34, 47, 0.94), rgba(10, 27, 39, 0.94));
 }
 
 * {
@@ -88,12 +90,13 @@ body {
   display: flex;
   flex-direction: column;
   color: var(--text);
-  font-family: var(--font-geist-sans), "Segoe UI", system-ui, sans-serif;
-  background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 26%),
-    radial-gradient(circle at right 20%, rgba(45, 212, 191, 0.1), transparent 30%),
-    linear-gradient(150deg, var(--bg-0) 0%, var(--bg-1) 45%, var(--bg-2) 100%);
-  background-attachment: fixed;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  background-color: var(--bg-0);
+  background-image: url("/images/water-bg.svg");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -134,6 +137,17 @@ h4 {
   color: var(--text-strong);
   letter-spacing: -0.03em;
   line-height: 1.12;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 ::selection {

@@ -1,7 +1,10 @@
 from collections.abc import Callable
 from importlib import import_module
 from io import BytesIO
+import os
+from pathlib import Path
 import re
+import shutil
 
 import fitz
 
@@ -13,6 +16,25 @@ class OCRUnavailableError(RuntimeError):
 
 
 OCRProvider = Callable[[bytes], str]
+
+
+def _find_tesseract_binary() -> str | None:
+	"""Locate tesseract executable from settings, PATH, or standard installation paths."""
+	if settings.ocr_tesseract_cmd and os.path.exists(settings.ocr_tesseract_cmd):
+		return settings.ocr_tesseract_cmd
+	which_cmd = shutil.which("tesseract")
+	if which_cmd:
+		return which_cmd
+	local_app_data = os.environ.get("LOCALAPPDATA", "")
+	candidate_paths = [
+		r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+		r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+		os.path.join(local_app_data, "Programs", "Tesseract-OCR", "tesseract.exe") if local_app_data else None,
+	]
+	for candidate in candidate_paths:
+		if candidate and os.path.exists(candidate):
+			return candidate
+	return None
 
 
 def tesseract_ocr(image_data: bytes) -> str:
@@ -27,8 +49,9 @@ def tesseract_ocr(image_data: bytes) -> str:
 			"including Pillow and pytesseract."
 		) from error
 
-	if settings.ocr_tesseract_cmd:
-		pytesseract.pytesseract.tesseract_cmd = settings.ocr_tesseract_cmd
+	tesseract_bin = _find_tesseract_binary()
+	if tesseract_bin:
+		pytesseract.pytesseract.tesseract_cmd = tesseract_bin
 
 	try:
 		with image_module.open(BytesIO(image_data)) as image:

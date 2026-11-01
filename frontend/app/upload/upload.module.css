@@ -285,3 +285,7 @@
     padding: 20px 16px;
   }
 }
+
+.btnActionInline { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 8px; background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; font-size: 0.82rem; font-weight: 750; text-decoration: none; transition: all 0.15s ease; } .btnActionInline:hover { background: #38bdf8; color: #031422; transform: translateY(-1px); }
+
+.contentWide { width: min(100%, 1540px); }

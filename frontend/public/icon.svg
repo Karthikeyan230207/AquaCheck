@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="dropGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#0d9488" />
+    </linearGradient>
+    <linearGradient id="glintGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient Water Glow -->
+  <circle cx="32" cy="36" r="22" fill="#38bdf8" opacity="0.25" />
+
+  <!-- Main Water Droplet Body -->
+  <path
+    d="M 32 6 
+       C 32 6, 12 30, 12 42 
+       A 20 20 0 0 0 52 42 
+       C 52 30, 32 6, 32 6 Z"
+    fill="url(#dropGrad)"
+  />
+
+  <!-- Specular Reflection Highlight -->
+  <path
+    d="M 32 11 
+       C 32 11, 16 31, 16 41 
+       A 15 15 0 0 0 24 52 
+       C 19 45, 21 34, 30 19 
+       C 31 17, 32 11, 32 11 Z"
+    fill="url(#glintGrad)"
+  />
+
+  <!-- Purity Shield Checkmark -->
+  <path
+    d="M 23 38 
+       L 29 44 
+       L 42 30"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="4.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Sparkle Accent -->
+  <polygon
+    points="46,14 47.5,18 51.5,19.5 47.5,21 46,25 44.5,21 40.5,19.5 44.5,18"
+    fill="#ffffff"
+    opacity="0.95"
+  />
+</svg>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Baby,
   BookOpen,
@@ -16,18 +16,18 @@ import {
   Layers,
   Microscope,
   OctagonAlert,
-  PartyPopper,
   Printer,
   RefreshCw,
   ShieldCheck,
   Smile,
-  Square,
   Sparkles,
   Sprout,
   TriangleAlert,
-  Volume2,
   Waves,
   Wrench,
+  CheckCircle2,
+  X,
+  RotateCcw,
 } from "lucide-react";
 import WaterQualityScene from "./WaterQualityScene";
 import styles from "./ReportInsights.module.css";
@@ -38,6 +38,7 @@ const LANGUAGES = [
 ];
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 const MANUAL_PARAMETERS = [
   { parameter: "pH", unit: "", step: "any" },
   { parameter: "TDS", unit: "mg/L", step: "any" },
@@ -49,74 +50,122 @@ const MANUAL_PARAMETERS = [
   { parameter: "Iron", unit: "mg/L", step: "any" },
 ];
 
-// Ultra-clear kid/family explanations (analogies anyone can understand)
-const TODDLER_EXPLANATIONS = {
+// Professional, human-designed parameter explanations (clinical & practical household implications)
+const PARAMETER_DETAILS = {
   pH: {
-    title: "Lemon vs. Soap Balance",
-    simple: "Tells us if the water is sour like a lemon or slippery like soap. Good water should be just right in the middle (like sweet rain) so it doesn't hurt your tummy or bite the pipes.",
-    actionGood: "Perfect balance! Smooth and gentle.",
-    actionBad: "Too sour or too bitter. Needs a simple filter to balance it.",
+    category: "Chemical Balance",
+    title: "pH (Acidity & Alkalinity)",
+    simple:
+      "Measures whether water is acidic, neutral, or alkaline. Balanced pH (6.5 – 8.5) protects pipes from metallic corrosion and provides a smooth, refreshing taste.",
+    impactGood: "Optimal balance — neutral, gentle on plumbing, and refreshing.",
+    impactBad:
+      "Acidic water can leach metals from copper pipes, while highly alkaline water causes bitter taste and mineral scaling.",
+    actionGood: "No chemical neutralization required.",
+    actionBad:
+      "Install an inline calcite neutralizer filter (for low pH) or specialized pH correction cartridge.",
     icon: Gauge,
   },
   TDS: {
-    title: "Tiny Salt & Mineral Bits",
-    simple: "Think of invisible sprinkles dissolved in water. A few sprinkles make water taste fresh, but too many turn water salty and leave white chalky spots on cups.",
-    actionGood: "Nice and crisp water without gritty chalk.",
-    actionBad: "Lots of extra salt bits. An RO (Reverse Osmosis) filter cleans this right away.",
+    category: "Dissolved Minerals",
+    title: "TDS (Total Dissolved Solids)",
+    simple:
+      "Total combined concentration of dissolved minerals, salts, and inorganic compounds. Moderate levels (< 500 mg/L) provide healthy minerals, while elevated levels cause a salty or mineral taste.",
+    impactGood: "Fresh, crisp taste with wholesome mineral balance.",
+    impactBad:
+      "High mineral content leaves white chalky deposits on kettles and fixtures, and can cause a heavy mineral taste.",
+    actionGood: "Mineral concentration is within the ideal drinking range.",
+    actionBad:
+      "Install a point-of-use Reverse Osmosis (RO) drinking system to lower dissolved mineral salts.",
     icon: Layers,
   },
   Turbidity: {
-    title: "Water Clarity (Cloudiness)",
-    simple: "Is the water crystal clear like glass, or cloudy like muddy pond water? We always want crystal clear water with zero floating dust.",
-    actionGood: "Super clear, like a glass of mountain ice!",
-    actionBad: "A bit foggy or dusty. Let's run it through a sediment filter.",
+    category: "Physical Clarity",
+    title: "Turbidity (Clarity & Sediment)",
+    simple:
+      "The optical haziness caused by suspended microscopic matter such as silt, organic dust, or clay. Clean drinking water must be crystal clear.",
+    impactGood: "Crystal clear optical clarity meeting WHO guidelines.",
+    impactBad:
+      "Cloudiness can shelter microorganisms, reduce the efficacy of UV disinfection, and cause sediment buildup in appliances.",
+    actionGood: "Water is optically clear with no suspended silt.",
+    actionBad:
+      "Install a 5-micron spun polypropylene sediment pre-filter to clarify incoming water.",
     icon: Eye,
   },
   "Total Hardness": {
-    title: "Soap Bubble Maker",
-    simple: "Measures calcium rock dust. When it is too high, soap won't make fluffy bubbles and it leaves crusty white rings on taps and pots.",
-    actionGood: "Makes big fluffy soap bubbles easily!",
-    actionBad: "Hard water minerals found. A water softener helps soap bubble up.",
+    category: "Mineral Hardness",
+    title: "Total Hardness (Ca & Mg)",
+    simple:
+      "Concentration of dissolved calcium and magnesium. Hard water creates chalky limescale inside geysers, boilers, and fixtures, reducing appliance efficiency.",
+    impactGood: "Moderate hardness — provides dietary minerals without scaling appliances.",
+    impactBad:
+      "Limescale reduces water heater efficiency and leaves residue on bathroom tiles and glassware.",
+    actionGood: "No water softener needed.",
+    actionBad:
+      "Install an ion-exchange water softening unit to protect heaters, washing machines, and plumbing.",
     icon: Waves,
   },
   Chloride: {
-    title: "Table Salt Level",
-    simple: "Too much chloride makes water taste salty like seawater and can rust metal pipes over time.",
-    actionGood: "Clean fresh taste, no salty bite.",
-    actionBad: "Salty taste detected. Check where groundwater is coming from.",
+    category: "Inorganic Salts",
+    title: "Chloride (Salts)",
+    simple:
+      "Naturally occurring salt compound present in groundwater and coastal aquifers. High chloride gives water a briny taste and accelerates metal corrosion.",
+    impactGood: "Standard level with no briny or brackish flavor.",
+    impactBad:
+      "Salty aftertaste and potential pitting corrosion in stainless steel fixtures and hot water tanks.",
+    actionGood: "Within normal taste and corrosion thresholds.",
+    actionBad:
+      "Point-of-use Reverse Osmosis (RO) filtration is recommended to eliminate excess salinity.",
     icon: Droplets,
   },
   Fluoride: {
-    title: "Tooth Shield Mineral",
-    simple: "A tiny pinch protects teeth from cavities! But too much can turn baby teeth spotty or brown.",
-    actionGood: "Just the right pinch for strong teeth.",
-    actionBad: "Too much for little teeth! Use activated alumina or RO purification.",
+    category: "Trace Minerals",
+    title: "Fluoride (Dental Enamel)",
+    simple:
+      "A trace mineral that protects tooth enamel at moderate levels (~0.7 mg/L). Excessive fluoride can cause dental fluorosis or mottling in developing teeth.",
+    impactGood: "Protective concentration safe for all age groups.",
+    impactBad:
+      "Exceeds recommended guidelines. Chronic exposure in children can lead to tooth staining and dental fluorosis.",
+    actionGood: "Within safe and protective dental health guidelines.",
+    actionBad:
+      "Install activated alumina or high-rejection RO membrane filtration to remove excess fluoride.",
     icon: Smile,
   },
   Nitrate: {
-    title: "Farm Fertilizer Runoff",
-    simple: "Sneaks into wells from farm dirt and fertilizers. Very important for babies because high nitrate makes it hard for little bodies to carry oxygen.",
-    actionGood: "Clean and safe from fertilizer runoff.",
-    actionBad: "Keep away from babies & pregnant moms until purified with RO or distillation!",
+    category: "Chemical Contaminant",
+    title: "Nitrate (Agricultural Runoff)",
+    simple:
+      "Inorganic nitrogen compound from agricultural fertilizers, septic tanks, and livestock waste. High levels reduce oxygen transport in the bloodstream.",
+    impactGood: "Clean and safe — free of hazardous agricultural contamination.",
+    impactBad:
+      "Health Alert: Poses serious oxygen-deprivation risk to infants ('blue baby syndrome') and pregnant women.",
+    actionGood: "Safe for baby formula and direct household consumption.",
+    actionBad:
+      "CRITICAL: Do not use for baby formula or direct drinking until purified via RO or distillation.",
     icon: Sprout,
   },
   Iron: {
-    title: "Rusty Metal Taste",
-    simple: "Comes from red earth or rusty old pipes. It turns water brownish-orange, tastes like chewing on a coin, and stains laundry.",
-    actionGood: "No metallic taste or reddish stains.",
-    actionBad: "Rusty reddish tint! Install an iron filter to take out the metal.",
+    category: "Heavy Metals",
+    title: "Iron (Pipe Corrosion & Soil)",
+    simple:
+      "Secondary mineral leached from natural iron-bearing soils or aging iron plumbing. Excess iron produces a metallic taste and stains fixtures and laundry.",
+    impactGood: "Clear water with no metallic odor, taste, or staining.",
+    impactBad:
+      "Produces reddish-brown stains on sanitaryware and laundry, plus an astringent metallic aftertaste.",
+    actionGood: "No iron contamination or pipe leaching detected.",
+    actionBad:
+      "Install an oxidizing iron/manganese filter or inspect older galvanized supply lines.",
     icon: Wrench,
   },
 };
 
 const PARTICLE_LEGEND = [
-  ["#bcecff", "TDS (Dissolved Bits)", "TDS"],
-  ["#82e8c1", "Turbidity (Cloudiness)", "Turbidity"],
-  ["#9bd5f2", "Total Hardness (Rock Dust)", "Total Hardness"],
-  ["#c5e7ff", "Chloride (Salt)", "Chloride"],
-  ["#9ce4ff", "Fluoride (Tooth Shield)", "Fluoride"],
-  ["#c5a9ff", "Nitrate (Fertilizer)", "Nitrate"],
-  ["#ffc080", "Iron (Rusty Metal)", "Iron"],
+  ["#bcecff", "TDS (Dissolved Solids)", "TDS"],
+  ["#82e8c1", "Turbidity (Clarity)", "Turbidity"],
+  ["#9bd5f2", "Total Hardness (Minerals)", "Total Hardness"],
+  ["#c5e7ff", "Chloride (Salinity)", "Chloride"],
+  ["#9ce4ff", "Fluoride (Dental Health)", "Fluoride"],
+  ["#c5a9ff", "Nitrate (Runoff)", "Nitrate"],
+  ["#ffc080", "Iron (Metallic Rust)", "Iron"],
 ];
 
 function formatRange(min, max, unit) {
@@ -126,6 +175,32 @@ function formatRange(min, max, unit) {
   }
   if (min != null) return `≥ ${min} ${unit}`.trim();
   return `≤ ${max} ${unit}`.trim();
+}
+
+function calculateMeter(param) {
+  if (param.value == null || typeof param.value !== "number") return null;
+  const val = param.value;
+  const min = param.reference_minimum ?? 0;
+  const max = param.reference_maximum ?? param.permissible_maximum ?? (val * 1.5 || 10);
+
+  const lowerBound = Math.min(min * 0.8, val * 0.8, 0);
+  const upperBound = Math.max(max * 1.25, val * 1.15, max + 1);
+  const span = upperBound - lowerBound || 1;
+
+  const valuePercent = Math.min(100, Math.max(0, ((val - lowerBound) / span) * 100));
+  const safeLeft = Math.min(100, Math.max(0, ((min - lowerBound) / span) * 100));
+  const safeWidth = Math.min(100 - safeLeft, Math.max(6, (((max - min) / span) * 100)));
+
+  return {
+    valuePercent,
+    safeLeft,
+    safeWidth,
+    minDisplay: param.reference_minimum != null ? param.reference_minimum : "0",
+    maxDisplay:
+      param.reference_maximum != null
+        ? param.reference_maximum
+        : param.permissible_maximum ?? "—",
+  };
 }
 
 export default function ReportInsights({
@@ -140,36 +215,29 @@ export default function ReportInsights({
   const [explanationError, setExplanationError] = useState("");
   const [loading, setLoading] = useState(false);
   const explanationRequestId = useRef(0);
-  const speechUtterance = useRef(null);
-  const speechAttempt = useRef(0);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [speechError, setSpeechError] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedLang, setSelectedLang] = useState("en");
   const [manualAnalysis, setManualAnalysis] = useState(null);
-  const sceneRef = useRef(null);
+  const sceneStickyRef = useRef(null);
+
   const currentAnalysis = manualAnalysis ?? analysis;
   const hasAnalysis = Boolean(currentAnalysis?.parameters?.length);
 
-  useEffect(() => {
-    return () => {
-      speechAttempt.current += 1;
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
+  const handleParameterSelect = useCallback((paramName) => {
+    setSelectedParam((previous) => (previous === paramName ? null : paramName));
   }, []);
 
-  // Determine Overall Traffic Light Verdict
+  // Executive Safety Verdict
   const verdict = useMemo(() => {
     if (!currentAnalysis?.parameters || currentAnalysis.parameters.length === 0) {
       return {
         level: "unknown",
-        badge: "Needs More Information",
-        headline: "We need more test numbers to be sure!",
-        subline: "This report doesn't have enough measurements yet. Don't guess—get a full water test.",
-        color: "#9dbdd0",
-        bg: "rgba(125, 211, 252, 0.08)",
+        badge: "INCOMPLETE DATASET",
+        headline: "More Measurements Needed",
+        subline:
+          "This report does not contain enough recognized measurements for a complete screening result.",
+        color: "#94a3b8",
+        bg: "rgba(148, 163, 184, 0.08)",
         icon: CircleHelp,
       };
     }
@@ -180,11 +248,12 @@ export default function ReportInsights({
     if (hasDanger) {
       return {
         level: "danger",
-        badge: "STOP & FIX (Action Needed)",
-        headline: "Do NOT drink directly from tap right now!",
-        subline: "Some levels are too high for drinking. Check the quick action steps below before drinking or cooking.",
-        color: "#f87171",
-        bg: "rgba(248, 113, 113, 0.1)",
+        badge: "OUTSIDE APPLIED RANGE",
+        headline: "Some Measurements Need Review",
+        subline:
+          "One or more measured values fall outside the reference ranges used in this screening. Review the parameter details and consult a qualified local laboratory about next steps.",
+        color: "#f43f5e",
+        bg: "rgba(244, 63, 94, 0.08)",
         icon: OctagonAlert,
       };
     }
@@ -192,89 +261,120 @@ export default function ReportInsights({
     if (hasWarning) {
       return {
         level: "warning",
-        badge: "CAUTION (Review Needed)",
-        headline: "Okay for some uses, but needs attention!",
-        subline: "The water is mostly fine, but a few parameters are approaching limits. A basic filter or softener will fix it.",
-        color: "#fbbf24",
-        bg: "rgba(251, 191, 36, 0.1)",
+        badge: "REVIEW SUGGESTED",
+        headline: "Some Measurements Need Attention",
+        subline:
+          "One or more measured values are outside the preferred ranges used in this screening. Review the parameter details and any recommendations.",
+        color: "#f59e0b",
+        bg: "rgba(245, 158, 11, 0.08)",
         icon: TriangleAlert,
       };
     }
 
     return {
       level: "safe",
-      badge: "ALL CLEAR (Great Water)",
-      headline: "Yay! This water is clean, fresh, and happy!",
-      subline: "All tested numbers look great and safe. No extra filters or treatments are required right now.",
-      color: "#34d399",
-      bg: "rgba(52, 211, 153, 0.1)",
+      badge: "NO FLAGGED RESULTS",
+      headline: "Evaluated Measurements Are Within Range",
+      subline:
+        "All measured parameters with reference ranges in this screening are within range. Unmeasured contaminants are not assessed.",
+      color: "#10b981",
+      bg: "rgba(16, 185, 129, 0.08)",
       icon: ShieldCheck,
     };
   }, [currentAnalysis]);
 
-  // Group concerning parameters
-  const concerningParameters = useMemo(() => {
-    if (!currentAnalysis?.parameters) return [];
-    return currentAnalysis.parameters.filter(
-      (p) => p.status === "outside_range" || p.status === "attention",
-    );
+  // Statistics Summary
+  const stats = useMemo(() => {
+    if (!currentAnalysis?.parameters) return { total: 0, safe: 0, issues: 0 };
+    const total = currentAnalysis.parameters.length;
+    const safe = currentAnalysis.parameters.filter((p) => p.status === "within_range").length;
+    const issues = total - safe;
+    return { total, safe, issues };
   }, [currentAnalysis]);
 
-  // Concrete Action Checklist
+  // Action Remediation Checklist
   const actionChecklist = useMemo(() => {
     const actions = [];
     if (!currentAnalysis?.parameters) return actions;
 
-    const nit = currentAnalysis.parameters.find((p) => p.parameter === "Nitrate" && p.status !== "within_range");
+    const nit = currentAnalysis.parameters.find(
+      (p) => p.parameter === "Nitrate" && p.status !== "within_range",
+    );
     if (nit) {
       actions.push({
         priority: "CRITICAL",
-        text: "Keep away from babies and formula: Nitrate is elevated. Use reverse osmosis (RO) filtration or bottled water.",
+        category: "Health Hazard",
+        text: "Elevated nitrate detected: Do not use for infant formula or baby food. Install a certified Reverse Osmosis (RO) system or source bottled water.",
         icon: Baby,
       });
     }
 
-    const turb = currentAnalysis.parameters.find((p) => p.parameter === "Turbidity" && p.status !== "within_range");
+    const turb = currentAnalysis.parameters.find(
+      (p) => p.parameter === "Turbidity" && p.status !== "within_range",
+    );
     if (turb) {
       actions.push({
         priority: "HIGH",
-        text: "Clean out cloudiness: Install a 5-micron sediment filter before drinking or using appliances.",
+        category: "Sediment Filtration",
+        text: "Cloudiness detected: Install a 5-micron sediment pre-filter to clarify incoming water and protect plumbing appliances.",
         icon: Filter,
       });
     }
 
-    const fe = currentAnalysis.parameters.find((p) => p.parameter === "Iron" && p.status !== "within_range");
-    if (fe) {
-      actions.push({
-        priority: "MEDIUM",
-        text: "Stop rust & staining: Add an iron/manganese removal filter or check older iron plumbing.",
-        icon: Wrench,
-      });
-    }
-
-    const tds = currentAnalysis.parameters.find((p) => p.parameter === "TDS" && p.status !== "within_range");
+    const tds = currentAnalysis.parameters.find(
+      (p) => p.parameter === "TDS" && p.status !== "within_range",
+    );
     if (tds) {
       actions.push({
         priority: "MEDIUM",
-        text: "High dissolved solids: Install a kitchen RO drinking system to reduce mineral salts.",
+        category: "Mineral Reduction",
+        text: "High total dissolved solids: Install a kitchen Reverse Osmosis (RO) purification unit to improve palatability and reduce mineral salts.",
         icon: Droplets,
       });
     }
 
-    const hard = currentAnalysis.parameters.find((p) => p.parameter === "Total Hardness" && p.status !== "within_range");
+    const hard = currentAnalysis.parameters.find(
+      (p) => p.parameter === "Total Hardness" && p.status !== "within_range",
+    );
     if (hard) {
       actions.push({
-        priority: "LOW",
-        text: "Hard water scale: An ion-exchange water softener will protect your geyser and pipes.",
+        priority: "MEDIUM",
+        category: "Scale Mitigation",
+        text: "Hard water minerals: Install an ion-exchange water softener to prevent scale buildup on heating elements and plumbing fixtures.",
         icon: Sparkles,
+      });
+    }
+
+    const fe = currentAnalysis.parameters.find(
+      (p) => p.parameter === "Iron" && p.status !== "within_range",
+    );
+    if (fe) {
+      actions.push({
+        priority: "MEDIUM",
+        category: "Corrosion & Taste",
+        text: "Iron content detected: Install an oxidizing iron filter or inspect galvanized supply lines to eliminate metallic taste and rust stains.",
+        icon: Wrench,
+      });
+    }
+
+    const ph = currentAnalysis.parameters.find(
+      (p) => p.parameter === "pH" && p.status !== "within_range",
+    );
+    if (ph) {
+      actions.push({
+        priority: "LOW",
+        category: "pH Stabilization",
+        text: "Imbalanced pH: Consider an inline calcite neutralizing filter to protect metal plumbing against accelerated corrosion or scaling.",
+        icon: Gauge,
       });
     }
 
     if (actions.length === 0) {
       actions.push({
         priority: "ROUTINE",
-        text: "Everything is healthy! Just re-test once a year or whenever taste or smell changes.",
-        icon: PartyPopper,
+        category: "Standard Monitoring",
+        text: "All tested parameters meet quality benchmarks. Schedule routine annual water testing or re-test if water taste, clarity, or odor changes.",
+        icon: CheckCircle2,
       });
     }
 
@@ -287,8 +387,6 @@ export default function ReportInsights({
     setLoading(true);
     setExplanationError("");
 
-    // Sanitize the analysis to match the exact AnalysisResult schema expected
-    // by the backend (extra="forbid" means any unexpected field → 422 error)
     const sanitizedAnalysis = {
       parameters: (currentAnalysis?.parameters ?? []).map((p) => ({
         parameter: p.parameter,
@@ -321,7 +419,6 @@ export default function ReportInsights({
       }
 
       if (!response.ok) {
-        // FastAPI validation errors return detail as an array of objects
         let detailMsg;
         if (typeof payload.detail === "string") {
           detailMsg = payload.detail;
@@ -352,7 +449,6 @@ export default function ReportInsights({
             : "Could not generate an explanation.",
         );
       }
-
     } finally {
       if (requestId === explanationRequestId.current) {
         setLoading(false);
@@ -361,100 +457,11 @@ export default function ReportInsights({
   }
 
   function handleLangChange(code) {
-    stopVoice();
     setSelectedLang(code);
     if (explanation || loading) {
       setExplanation("");
       requestExplanation(code);
     }
-  }
-
-  function stopVoice() {
-    speechAttempt.current += 1;
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-    speechUtterance.current = null;
-    setIsSpeaking(false);
-    setSpeechError("");
-  }
-
-  async function speakExplanation() {
-    if (!explanation) return;
-    if (
-      typeof window === "undefined"
-      || !("speechSynthesis" in window)
-      || !("SpeechSynthesisUtterance" in window)
-    ) {
-      setSpeechError("Voice playback is not supported in this browser.");
-      return;
-    }
-
-    stopVoice();
-    const attempt = ++speechAttempt.current;
-    const language = LANGUAGES.find((item) => item.code === selectedLang);
-    const utterance = new window.SpeechSynthesisUtterance(
-      explanation.replace(/\s+/g, " ").trim(),
-    );
-    utterance.lang = language?.locale ?? "en-US";
-
-    const synthesis = window.speechSynthesis;
-    let voices = synthesis.getVoices();
-    if (!voices.length) {
-      voices = await new Promise((resolve) => {
-        const timeout = window.setTimeout(() => {
-          synthesis.removeEventListener("voiceschanged", onVoicesChanged);
-          resolve(synthesis.getVoices());
-        }, 1500);
-        const onVoicesChanged = () => {
-          const availableVoices = synthesis.getVoices();
-          if (availableVoices.length) {
-            window.clearTimeout(timeout);
-            synthesis.removeEventListener("voiceschanged", onVoicesChanged);
-            resolve(availableVoices);
-          }
-        };
-        synthesis.addEventListener("voiceschanged", onVoicesChanged);
-      });
-    }
-    if (attempt !== speechAttempt.current) return;
-
-    const preferredVoice = voices.find(
-      (voice) => voice.lang.toLowerCase() === utterance.lang.toLowerCase(),
-    ) ?? voices.find((voice) => {
-      const voiceLanguage = voice.lang.toLowerCase();
-      return voiceLanguage === selectedLang || voiceLanguage.startsWith(`${selectedLang}-`);
-    });
-    if (!preferredVoice) {
-      setSpeechError(
-        `No ${language?.label ?? "matching language"} voice is installed or enabled in this browser.`,
-      );
-      return;
-    }
-    utterance.voice = preferredVoice;
-
-    utterance.onstart = () => {
-      if (speechUtterance.current === utterance) {
-        setIsSpeaking(true);
-      }
-    };
-    utterance.onend = () => {
-      if (speechUtterance.current === utterance) {
-        speechUtterance.current = null;
-        setIsSpeaking(false);
-      }
-    };
-    utterance.onerror = (event) => {
-      if (speechUtterance.current !== utterance) return;
-      speechUtterance.current = null;
-      setIsSpeaking(false);
-      if (event.error !== "canceled" && event.error !== "interrupted") {
-        setSpeechError("Could not play the voice. Check that your browser has a voice for this language.");
-      }
-    };
-    speechUtterance.current = utterance;
-    setSpeechError("");
-    window.speechSynthesis.speak(utterance);
   }
 
   function handleDownloadReport() {
@@ -471,363 +478,568 @@ export default function ReportInsights({
   }
 
   return (
-    <section aria-label="Simple water quality insights and action plan" className={styles.insights}>
+    <div className={styles.reportSplitLayout}>
       
-      {/* 1. BIG TRAFFIC LIGHT BANNER (UNDERSTANDABLE FOR A 3-YEAR-OLD) */}
-      <div
-        className={styles.verdictBanner}
-        style={{
-          borderColor: verdict.color,
-          backgroundColor: verdict.bg,
-        }}
-      >
-        <div className={styles.verdictIconWrap} style={{ color: verdict.color }}>
-          <span className={styles.verdictIcon}>{<verdict.icon size={34} strokeWidth={2.2} />}</span>
-        </div>
-        <div className={styles.verdictText}>
-          <div className={styles.badgeRow}>
-            <span
-              className={styles.trafficBadge}
-              style={{ backgroundColor: verdict.color }}
-            >
-              {verdict.badge}
-            </span>
-            <span className={styles.scorePill}>
-              Water Health Score:{" "}
-              <strong>
-                {currentAnalysis.overall_score != null ? `${currentAnalysis.overall_score}/100` : "Needs more data"}
-              </strong>
-            </span>
-          </div>
-          <h2 className={styles.verdictTitle}>{verdict.headline}</h2>
-          <p className={styles.verdictSub}>{verdict.subline}</p>
-        </div>
-      </div>
-
-      {/* 2. IMMEDIATE ACTION STEPS (WHAT TO DO NEXT) */}
-      <div className={styles.actionPlanCard}>
-        <div className={styles.cardHeader}>
-          <div>
-            <span className={styles.pillTag}>STEP-BY-STEP</span>
-            <h3 className={styles.actionPlanTitle}>What You Should Do Next</h3>
-          </div>
-          <button
-            type="button"
-            className={`${styles.btn} ${styles.btnSecondary}`}
-            onClick={handleDownloadReport}
-            disabled={isDownloading}
-            title="Download or print this report as PDF"
-          >
-            <Printer size={16} strokeWidth={2.2} aria-hidden="true" />
-            {isDownloading ? "Preparing PDF…" : "Save / Print PDF"}
-          </button>
-        </div>
-        <div className={styles.actionGrid}>
-          {actionChecklist.map((act, i) => (
-            <div key={i} className={styles.actionItem}>
-              <span className={styles.actionIcon}>{<act.icon size={24} strokeWidth={2.1} />}</span>
+      {/* ============================================================
+          LEFT COLUMN: Scrollable Laboratory Analysis & Findings
+         ============================================================ */}
+      <div className={styles.scrollableContent}>
+        
+        {/* 1. EXECUTIVE ASSESSMENT & HEALTH SCORE CARD */}
+        <section
+          aria-label="Executive water quality evaluation"
+          className={styles.executiveCard}
+          style={{
+            borderColor: "var(--border-strong)",
+            background: `linear-gradient(135deg, ${verdict.bg} 0%, rgba(6, 20, 32, 0.85) 100%)`,
+          }}
+        >
+          <div className={styles.executiveHeader}>
+            <div className={styles.executiveIdentity}>
+              <div className={styles.executiveIconWrap} style={{ color: verdict.color }}>
+                <verdict.icon size={28} strokeWidth={2.2} />
+              </div>
               <div>
-                <span className={`${styles.priorityBadge} ${styles[act.priority.toLowerCase()] || ""}`}>
-                  {act.priority}
-                </span>
-                <p className={styles.actionDesc}>{act.text}</p>
+                <div className={styles.badgeRow}>
+                  <span
+                    className={styles.trafficBadge}
+                    style={{ backgroundColor: verdict.color }}
+                  >
+                    {verdict.badge}
+                  </span>
+                  <span className={styles.scopeMeta}>AquaCheck screening ranges</span>
+                </div>
+                <h2 className={styles.verdictTitle}>{verdict.headline}</h2>
+                <p className={styles.verdictSub}>{verdict.subline}</p>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* 3. SUPER SIMPLE PARAMETER CARDS (LIKE A PICTURE BOOK) */}
-      <div className={styles.friendlyCardsSection}>
-        <div className={styles.sectionHeadingWrap}>
-          <div>
-            <span className={styles.pillTag}>SIMPLE EXPLANATIONS</span>
-            <h3 className={styles.friendlyTitle}>What’s In Your Water? (Kid-Friendly Guide)</h3>
-            <p className={styles.friendlySubtitle}>
-              Tap on any card to see what it is, why it matters, and how clean it is.
-            </p>
-          </div>
-        </div>
-
-        <div className={styles.friendlyGrid}>
-          {currentAnalysis.parameters.map((param) => {
-            const info = TODDLER_EXPLANATIONS[param.parameter] || {
-              title: param.parameter,
-              simple: "A water test measurement.",
-              actionGood: "Looks good!",
-              actionBad: "Needs filtering.",
-              icon: Droplets,
-            };
-            const isGood = param.status === "within_range";
-            const isAttention = param.status === "attention";
-            const isBad = param.status === "outside_range";
-
-            return (
-              <div
-                key={param.parameter}
-                className={`${styles.kidCard} ${isBad ? styles.kidCardBad : isAttention ? styles.kidCardWarn : styles.kidCardGood} ${selectedParam === param.parameter ? styles.kidCardActive : ""}`}
-                onClick={() => setSelectedParam((prev) => (prev === param.parameter ? null : param.parameter))}
+            <div className={styles.executiveActions}>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={handleDownloadReport}
+                disabled={isDownloading}
+                title="Save or print this laboratory report as PDF"
               >
-                <div className={styles.kidCardTop}>
-                  <div className={styles.kidIconTitle}>
-                    <span className={styles.cardIcon}>{<info.icon size={24} strokeWidth={2.1} />}</span>
-                    <div>
-                      <h4 className={styles.kidParamName}>{info.title}</h4>
-                      <small className={styles.techSubName}>({param.parameter})</small>
-                    </div>
+                <Printer size={15} strokeWidth={2.2} aria-hidden="true" />
+                <span>{isDownloading ? "Preparing PDF…" : "Export / Print"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Executive KPI Bar */}
+          <div className={styles.executiveKpiGrid}>
+            <div className={styles.kpiItem}>
+              <span className={styles.kpiLabel}>Screening score</span>
+              <div className={styles.kpiValueRow}>
+                <strong className={styles.kpiValue} style={{ color: verdict.color }}>
+                  {currentAnalysis.overall_score != null ? currentAnalysis.overall_score : "—"}
+                </strong>
+                <span className={styles.kpiSub}>/ 100</span>
+              </div>
+              <div className={styles.kpiBarTrack}>
+                <div
+                  className={styles.kpiBarFill}
+                  style={{
+                    width: `${Math.min(100, Math.max(0, currentAnalysis.overall_score ?? 0))}%`,
+                    backgroundColor: verdict.color,
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className={styles.kpiItem}>
+              <span className={styles.kpiLabel}>Parameters Analyzed</span>
+              <div className={styles.kpiValueRow}>
+                <strong className={styles.kpiValue}>{stats.total}</strong>
+                <span className={styles.kpiSub}>analytes</span>
+              </div>
+              <p className={styles.kpiText}>Measurements found in this report</p>
+            </div>
+
+            <div className={styles.kpiItem}>
+              <span className={styles.kpiLabel}>Within applied range</span>
+              <div className={styles.kpiValueRow}>
+                <strong className={styles.kpiValue} style={{ color: "var(--success)" }}>
+                  {stats.safe}
+                </strong>
+                <span className={styles.kpiSub}>/ {stats.total} within spec</span>
+              </div>
+              <p className={styles.kpiText}>Of the measurements evaluated</p>
+            </div>
+
+            <div className={styles.kpiItem}>
+              <span className={styles.kpiLabel}>Remediation Items</span>
+              <div className={styles.kpiValueRow}>
+                <strong
+                  className={styles.kpiValue}
+                  style={{ color: stats.issues > 0 ? "var(--warning)" : "var(--success)" }}
+                >
+                  {stats.issues}
+                </strong>
+                <span className={styles.kpiSub}>flagged</span>
+              </div>
+              <p className={styles.kpiText}>
+                {stats.issues === 0 ? "Zero interventions needed" : "Filtration or review advised"}
+              </p>
+            </div>
+          </div>
+          <p className={styles.scoreContext}>
+            The score summarizes only the measurements evaluated against the ranges shown; it does not guarantee drinking-water safety.
+          </p>
+        </section>
+
+        {/* 2. REMEDIATION & ACTION CHECKLIST */}
+        <section aria-label="Remediation action steps" className={styles.actionPlanCard}>
+          <div className={styles.cardHeader}>
+            <div>
+              <span className={styles.pillTag}>ENGINEERING REMEDIATION</span>
+              <h3 className={styles.actionPlanTitle}>Recommended Action Steps</h3>
+              <p className={styles.actionPlanSubtitle}>
+                Actionable engineering solutions prioritized by health urgency and home plumbing impact.
+              </p>
+            </div>
+          </div>
+          <div className={styles.actionGrid}>
+            {actionChecklist.map((act, i) => (
+              <div
+                key={i}
+                className={`${styles.actionItem} ${styles[`actionItem_${act.priority.toLowerCase()}`] || ""}`}
+              >
+                <span className={styles.actionIcon}>
+                  <act.icon size={20} strokeWidth={2.1} />
+                </span>
+                <div className={styles.actionItemContent}>
+                  <div className={styles.actionBadgeRow}>
+                    <span
+                      className={`${styles.priorityBadge} ${styles[act.priority.toLowerCase()] || ""}`}
+                    >
+                      {act.priority}
+                    </span>
+                    {act.category && <span className={styles.actionCategory}>{act.category}</span>}
                   </div>
-                  <span className={`${styles.kidStatusTag} ${isBad ? styles.tagRed : isAttention ? styles.tagYellow : styles.tagGreen}`}>
-                    {isBad ? <CircleX size={13} strokeWidth={2.4} /> : isAttention ? <TriangleAlert size={13} strokeWidth={2.4} /> : <CircleCheck size={13} strokeWidth={2.4} />}
-                    {isBad ? "Needs Fix" : isAttention ? "Watch Out" : "Safe & Sound"}
-                  </span>
-                </div>
-
-                <p className={styles.kidSimpleExplain}>{info.simple}</p>
-
-                <div className={styles.kidVerdictLine}>
-                  <strong>Advice:</strong> {isGood ? info.actionGood : info.actionBad}
-                </div>
-
-                {/* Micro numbers for parents */}
-                <div className={styles.kidValueFooter}>
-                  <span>Reading: <strong>{param.value ?? "None"} {param.unit}</strong></span>
-                  <button
-                    type="button"
-                    className={`${styles.btn} ${styles.btnChipSm}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedParam(param.parameter);
-                      sceneRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }}
-                  >
-                    <Microscope size={13} strokeWidth={2.2} />
-                    View 3D particle
-                  </button>
+                  <p className={styles.actionDesc}>{act.text}</p>
                 </div>
               </div>
-            );
-
-          })}
-        </div>
-      </div>
-
-      {/* 4. CONCEPTUAL 3D WATER LAB */}
-      <div ref={sceneRef} className={styles.visualSectionCard}>
-        <div className={styles.visualHeading}>
-          <div>
-            <span className={styles.pillTag}>AQUACHECK 3D LAB</span>
-            <h3 className={styles.sectionTitle}>See It in 3D: Your Water vs. Pure Water</h3>
-            <p className={styles.intro}>
-              A live 3D water simulation showing floating particles and color based on your sample.
-            </p>
-          </div>
-          <div className={styles.modeToggle} role="group" aria-label="Comparison visual mode">
-            <button
-              type="button"
-              className={`${styles.btn} ${styles.btnChip} ${viewMode === "sample" ? styles.btnChipActive : ""}`}
-              onClick={() => setViewMode("sample")}
-            >
-              Your Sample
-            </button>
-            <button
-              type="button"
-              className={`${styles.btn} ${styles.btnChip} ${viewMode === "normal" ? styles.btnChipActive : ""}`}
-              onClick={() => setViewMode("normal")}
-            >
-              Pure Baseline
-            </button>
-          </div>
-        </div>
-
-        <WaterQualityScene
-          parameters={currentAnalysis.parameters}
-          viewMode={viewMode}
-          selectedParameterName={selectedParam}
-          onSelectParameter={(paramName) => {
-            setSelectedParam((prev) => (prev === paramName ? null : paramName));
-          }}
-        />
-
-        <div className={styles.disclaimerCallout}>
-          <span className={styles.calloutBadge}>Note</span>
-          <p>
-            <strong>Kid & Family Friendly Model:</strong> This 3D sphere is an educational illustration to help you picture the microscopic particles. It is a visual simulation, not a photo.
-          </p>
-        </div>
-
-        {/* Clickable Legend */}
-        <div className={styles.legendContainer}>
-          <span className={styles.legendTitle}>Click any particle to highlight it:</span>
-          <ul aria-label="Particle color legend" className={styles.legend}>
-            {PARTICLE_LEGEND.map(([color, label, key]) => (
-              <li key={key}>
-                <button
-                  type="button"
-                  className={`${styles.legendItemButton} ${selectedParam === key ? styles.legendItemActive : ""}`}
-                  onClick={() => setSelectedParam((prev) => (prev === key ? null : key))}
-                >
-                  <span aria-hidden="true" style={{ "--particle-color": color }} />
-                  {label}
-                </button>
-              </li>
             ))}
-          </ul>
-        </div>
-      </div>
+          </div>
+        </section>
 
-      {/* 5. TOGGLEABLE TECHNICAL DETAILS (FOR LAB SCIENTISTS OR DETAIL-ORIENTED PARENTS) */}
-      <div className={styles.technicalAccordion}>
-        <button
-          type="button"
-          className={styles.accordionToggle}
-          onClick={() => setShowTechnicalDetails((v) => !v)}
-          aria-expanded={showTechnicalDetails}
-        >
-          <span>
-            <Microscope size={15} strokeWidth={2.2} /> {showTechnicalDetails ? "Hide Laboratory Metrics & Standard Limits" : "Show Full Laboratory Numbers & Limits (Technical)"}
-          </span>
-          <span className={styles.arrowIcon} style={{ display: "inline-flex" }}>
-            <ChevronDown
-              size={16}
-              strokeWidth={2.4}
-              style={{ transform: showTechnicalDetails ? "rotate(180deg)" : "none", transition: "transform 200ms ease" }}
-            />
-          </span>
-        </button>
+        {/* 3. PARAMETER DIAGNOSTICS & BENCHMARK RANGE METERS */}
+        <section aria-label="Tested water parameters" className={styles.diagnosticsSection}>
+          <div className={styles.sectionHeadingWrap}>
+            <div>
+              <span className={styles.pillTag}>ANALYTE METRICS</span>
+              <h3 className={styles.friendlyTitle}>Water Composition & Clinical Significance</h3>
+              <p className={styles.friendlySubtitle}>
+                Tested laboratory measurements compared against safe drinking standards, with practical home implications.
+              </p>
+            </div>
+          </div>
 
-        {showTechnicalDetails && (
-          <div className={styles.tableWrap}>
-            <table className={styles.metricsTable}>
-              <thead>
-                <tr>
-                  <th>Parameter</th>
-                  <th>Measured</th>
-                  <th>Reference Range</th>
-                  <th>Permissible Max</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentAnalysis.parameters.map((param) => (
-                  <tr key={param.parameter}>
-                    <td><strong>{param.parameter}</strong></td>
-                    <td>{param.value ?? "Unavailable"} {param.unit}</td>
-                    <td>{formatRange(param.reference_minimum, param.reference_maximum, param.unit)}</td>
-                    <td>{formatRange(param.permissible_minimum, param.permissible_maximum, param.unit)}</td>
-                    <td>
-                      <span className={`${styles.badge} ${styles[param.status] || ""}`}>
-                        {param.status.replaceAll("_", " ")}
+          <div className={styles.friendlyGrid}>
+            {currentAnalysis.parameters.map((param) => {
+              const info = PARAMETER_DETAILS[param.parameter] || {
+                category: "General Analyte",
+                title: param.parameter,
+                simple: "A standard physical or chemical water test measurement.",
+                impactGood: "Reading is within acceptable limits.",
+                impactBad: "Parameter deviates from the recommended baseline.",
+                actionGood: "No intervention needed.",
+                actionBad: "Consider routine filtration.",
+                icon: Droplets,
+              };
+              const isGood = param.status === "within_range";
+              const isAttention = param.status === "attention";
+              const isBad = param.status === "outside_range";
+              const meter = calculateMeter(param);
+              const isSelected = selectedParam === param.parameter;
+
+              return (
+                <div
+                  key={param.parameter}
+                  className={`${styles.paramCard} ${
+                    isBad
+                      ? styles.paramCardBad
+                      : isAttention
+                      ? styles.paramCardWarn
+                      : styles.paramCardGood
+                  } ${isSelected ? styles.paramCardActive : ""}`}
+                  onClick={() => handleParameterSelect(param.parameter)}
+                >
+                  {/* Header: Category & Status */}
+                  <div className={styles.paramCardTop}>
+                    <div className={styles.paramHeaderTitle}>
+                      <span className={styles.paramIcon}>
+                        <info.icon size={20} strokeWidth={2.2} />
                       </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <div>
+                        <span className={styles.categoryBadge}>{info.category}</span>
+                        <h4 className={styles.paramName}>{info.title}</h4>
+                      </div>
+                    </div>
+                    <span
+                      className={`${styles.statusChip} ${
+                        isBad ? styles.chipRed : isAttention ? styles.chipYellow : styles.chipGreen
+                      }`}
+                    >
+                      {isBad ? (
+                        <CircleX size={12} strokeWidth={2.4} />
+                      ) : isAttention ? (
+                        <TriangleAlert size={12} strokeWidth={2.4} />
+                      ) : (
+                        <CircleCheck size={12} strokeWidth={2.4} />
+                      )}
+                      {isBad ? "Action Required" : isAttention ? "Attention" : "Within Spec"}
+                    </span>
+                  </div>
+
+                  {/* Plain-Language Clinical Significance */}
+                  <p className={styles.paramDescription}>{info.simple}</p>
+
+                  {/* Visual Benchmark Range Meter */}
+                  {meter && (
+                    <div className={styles.meterContainer}>
+                      <div className={styles.meterLabels}>
+                        <span>Target: {meter.minDisplay} – {meter.maxDisplay} {param.unit}</span>
+                        <span className={styles.meterReadingText}>
+                          Reading: <strong>{param.value} {param.unit}</strong>
+                        </span>
+                      </div>
+                      <div className={styles.meterTrack}>
+                        <div
+                          className={styles.meterSafeZone}
+                          style={{
+                            left: `${meter.safeLeft}%`,
+                            width: `${meter.safeWidth}%`,
+                          }}
+                        />
+                        <div
+                          className={styles.meterMarker}
+                          style={{
+                            left: `${meter.valuePercent}%`,
+                            backgroundColor: isBad
+                              ? "var(--danger)"
+                              : isAttention
+                              ? "var(--warning)"
+                              : "var(--success)",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Practical Advice Banner */}
+                  <div
+                    className={`${styles.adviceBox} ${
+                      isBad
+                        ? styles.adviceBoxBad
+                        : isAttention
+                        ? styles.adviceBoxWarn
+                        : styles.adviceBoxGood
+                    }`}
+                  >
+                    <strong className={styles.adviceLabel}>Recommendation:</strong>{" "}
+                    <span>{isGood ? info.actionGood : info.actionBad}</span>
+                  </div>
+
+                  {/* Card Footer: Button to highlight in 3D */}
+                  <div className={styles.paramFooter}>
+                    <div className={styles.paramFooterData}>
+                      <span>Tested Value:</span>
+                      <strong>
+                        {param.value != null ? `${param.value} ${param.unit}` : "Not detected"}
+                      </strong>
+                    </div>
+                    <button
+                      type="button"
+                      className={`${styles.btnChipSm} ${isSelected ? styles.btnChipSmActive : ""}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleParameterSelect(param.parameter);
+                      }}
+                      title="Isolate particle in the 3D water simulation"
+                    >
+                      <Microscope size={13} strokeWidth={2.2} />
+                      <span>{isSelected ? "Isolating in 3D" : "View in 3D Glass"}</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </section>
+
+        {/* 4. LABORATORY REGULATORY BENCHMARK TABLE (IS 10500 / WHO) */}
+        <section aria-label="Laboratory compliance table" className={styles.technicalAccordion}>
+          <button
+            type="button"
+            className={styles.accordionToggle}
+            onClick={() => setShowTechnicalDetails((v) => !v)}
+            aria-expanded={showTechnicalDetails}
+          >
+            <span>
+              <Microscope size={16} strokeWidth={2.2} />{" "}
+              {showTechnicalDetails
+                ? "Hide Complete Laboratory Regulatory Benchmark Table"
+                : "View Complete Laboratory Data & Standards (IS 10500 / WHO)"}
+            </span>
+            <span className={styles.arrowIcon} style={{ display: "inline-flex" }}>
+              <ChevronDown
+                size={17}
+                strokeWidth={2.4}
+                style={{
+                  transform: showTechnicalDetails ? "rotate(180deg)" : "none",
+                  transition: "transform 200ms ease",
+                }}
+              />
+            </span>
+          </button>
+
+          {showTechnicalDetails && (
+            <div className={styles.tableWrap}>
+              <table className={styles.metricsTable}>
+                <thead>
+                  <tr>
+                    <th>Analyte Parameter</th>
+                    <th>Measured Value</th>
+                    <th>Acceptable Standard</th>
+                    <th>Permissible Limit</th>
+                    <th>Compliance Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentAnalysis.parameters.map((param) => (
+                    <tr key={param.parameter}>
+                      <td>
+                        <strong>{param.parameter}</strong>
+                      </td>
+                      <td>
+                        {param.value != null ? `${param.value} ${param.unit}` : "Unavailable"}
+                      </td>
+                      <td>
+                        {formatRange(
+                          param.reference_minimum,
+                          param.reference_maximum,
+                          param.unit,
+                        )}
+                      </td>
+                      <td>
+                        {formatRange(
+                          param.permissible_minimum,
+                          param.permissible_maximum,
+                          param.unit,
+                        )}
+                      </td>
+                      <td>
+                        <span className={`${styles.badge} ${styles[param.status] || ""}`}>
+                          {param.status.replaceAll("_", " ")}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* 5. AI WATER QUALITY EXECUTIVE SUMMARY (TEXT & MULTI-LANGUAGE) */}
+        <section aria-label="AI summary and language translation" className={styles.explanation}>
+          <div className={styles.aiStoryHeader}>
+            <div>
+              <span className={styles.pillTag}>INTELLIGENT DIAGNOSTICS</span>
+              <h4 className={styles.actionPlanTitle}>AI Water Quality Executive Summary</h4>
+              <p className={styles.intro}>
+                Synthesized natural language summary tailored for homeowners, facility managers, and families. Choose your preferred language below.
+              </p>
+            </div>
+            {/* Language Selector */}
+            <div
+              className={styles.langSelector}
+              role="group"
+              aria-label="Select explanation language"
+            >
+              <span className={styles.langIcon} aria-hidden="true">
+                <Languages size={15} strokeWidth={2.2} />
+              </span>
+              {LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  className={`${styles.btnChip} ${
+                    selectedLang === lang.code ? styles.btnChipActive : ""
+                  }`}
+                  onClick={() => handleLangChange(lang.code)}
+                >
+                  {lang.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {!explanation && !loading ? (
+            <button
+              className={styles.btnPrimary}
+              disabled={loading}
+              onClick={() => requestExplanation()}
+              type="button"
+            >
+              <BookOpen size={16} strokeWidth={2.2} />
+              <span>Generate Summary ({LANGUAGES.find((l) => l.code === selectedLang)?.label ?? "English"})</span>
+            </button>
+          ) : null}
+
+          {loading ? (
+            <div className={styles.loadingRow}>
+              <span className={styles.loadingSpinner} aria-hidden="true" />
+              <span>Analyzing laboratory figures and synthesizing summary…</span>
+            </div>
+          ) : null}
+
+          {explanation ? (
+            <div aria-live="polite" className={styles.explanationText}>
+              {explanation
+                .split(/\s*\n\n\s*/)
+                .filter(Boolean)
+                .map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
+              <div className={styles.retryRow}>
+                <button
+                  className={styles.btnSecondary}
+                  onClick={() => {
+                    setExplanation("");
+                    requestExplanation();
+                  }}
+                  type="button"
+                >
+                  <RefreshCw size={15} strokeWidth={2.2} />
+                  <span>Regenerate Summary</span>
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {explanationError ? (
+            <p aria-live="polite" className={styles.error} role="alert">
+              {explanationError}
+            </p>
+          ) : null}
+        </section>
+
       </div>
 
-      {/* 6. AI STORY SUMMARY (PLAIN WORDS + MULTI-LANGUAGE) */}
-      <div className={styles.explanation}>
-        <div className={styles.aiStoryHeader}>
-          <div>
-            <span className={styles.pillTag}>AI WATER STORY</span>
-            <h4 className={styles.actionPlanTitle}>Want a summary of this report?</h4>
-            <p className={styles.intro}>
-              Our AI reads the laboratory details and writes a friendly explanation anyone in your family can read — pick your language below.
-            </p>
-          </div>
-          {/* Language Selector */}
-          <div className={styles.langSelector} role="group" aria-label="Select explanation language">
-            <span className={styles.langIcon} aria-hidden="true">
-              <Languages size={16} strokeWidth={2.2} />
-            </span>
-            {LANGUAGES.map((lang) => (
+      {/* ============================================================
+          RIGHT COLUMN: Sticky / Fixed 3D Water Glass & Inspector
+         ============================================================ */}
+      <aside className={styles.stickyColumn} ref={sceneStickyRef}>
+        <div className={styles.stickyCard}>
+          {/* Header */}
+          <div className={styles.sceneHeader}>
+            <div>
+              <span className={styles.pillTag}>3D MOLECULAR LAB</span>
+              <h3 className={styles.sceneTitle}>Interactive Water Glass</h3>
+            </div>
+            <div className={styles.modeToggle} role="group" aria-label="Comparison visual mode">
               <button
-                key={lang.code}
                 type="button"
-                className={`${styles.btn} ${styles.btnChip} ${selectedLang === lang.code ? styles.btnChipActive : ""}`}
-                onClick={() => handleLangChange(lang.code)}
+                className={`${styles.btnChip} ${
+                  viewMode === "sample" ? styles.btnChipActive : ""
+                }`}
+                onClick={() => setViewMode("sample")}
               >
-                {lang.label}
+                Sample
               </button>
-            ))}
+              <button
+                type="button"
+                className={`${styles.btnChip} ${
+                  viewMode === "normal" ? styles.btnChipActive : ""
+                }`}
+                onClick={() => setViewMode("normal")}
+              >
+                Pure
+              </button>
+            </div>
           </div>
-        </div>
 
-        {!explanation && !loading ? (
-          <button
-            className={`${styles.btn} ${styles.btnPrimary}`}
-            disabled={loading}
-            onClick={() => requestExplanation()}
-            type="button"
-          >
-            <BookOpen size={16} strokeWidth={2.2} />
-            {LANGUAGES.find((l) => l.code === selectedLang)?.label ?? "English"} — Generate explanation
-          </button>
-        ) : null}
-
-        {loading ? (
-          <div className={styles.loadingRow}>
-            <span className={styles.loadingSpinner} aria-hidden="true" />
-            <span>Writing your water story…</span>
+          {/* Interactive 3D Water Glass Canvas */}
+          <div className={styles.canvasFrame}>
+            <WaterQualityScene
+              parameters={currentAnalysis.parameters}
+              viewMode={viewMode}
+              selectedParameterName={selectedParam}
+              onSelectParameter={handleParameterSelect}
+            />
           </div>
-        ) : null}
 
-        {explanation ? (
-          <div aria-live="polite" className={styles.explanationText}>
-            {explanation.split(/\s*\n\n\s*/).filter(Boolean).map((para, i) => (
-              <p key={i}>{para}</p>
-            ))}
-            <div className={styles.retryRow}>
-              {isSpeaking ? (
+          {/* Highlighted Parameter Banner */}
+          {selectedParam ? (
+            <div className={styles.activeIsolateBanner}>
+              <div className={styles.isolateInfo}>
+                <span className={styles.isolateDot} />
+                <span>Isolating: <strong>{selectedParam}</strong></span>
+              </div>
+              <button
+                type="button"
+                className={styles.clearSelectionBtn}
+                onClick={() => setSelectedParam(null)}
+                title="Clear isolation"
+              >
+                <X size={13} />
+                <span>Show All</span>
+              </button>
+            </div>
+          ) : (
+            <div className={styles.idleHintBanner}>
+              <span>All particulate matter rendered</span>
+            </div>
+          )}
+
+          {/* Clickable Legend */}
+          <div className={styles.legendWrap}>
+            <div className={styles.legendHeaderRow}>
+              <span className={styles.legendTitle}>Click Analyte to Isolate:</span>
+              {selectedParam && (
                 <button
-                  className={`${styles.btn} ${styles.btnSecondary}`}
-                  onClick={stopVoice}
                   type="button"
+                  className={styles.resetLegendBtn}
+                  onClick={() => setSelectedParam(null)}
                 >
-                  <Square size={15} strokeWidth={2.2} />
-                  Stop voice
-                </button>
-              ) : (
-                <button
-                  className={`${styles.btn} ${styles.btnSecondary}`}
-                  onClick={speakExplanation}
-                  type="button"
-                  title={`Listen in ${LANGUAGES.find((l) => l.code === selectedLang)?.label}`}
-                >
-                  <Volume2 size={15} strokeWidth={2.2} />
-                  Listen to explanation
+                  <RotateCcw size={12} />
+                  <span>Reset</span>
                 </button>
               )}
-              <button
-                className={`${styles.btn} ${styles.btnSecondary}`}
-                onClick={() => {
-                  stopVoice();
-                  setExplanation("");
-                  requestExplanation();
-                }}
-                type="button"
-              >
-                <RefreshCw size={15} strokeWidth={2.2} />
-                Regenerate story
-              </button>
             </div>
+            <ul aria-label="Particle color legend" className={styles.legend}>
+              {PARTICLE_LEGEND.map(([color, label, key]) => (
+                <li key={key}>
+                  <button
+                    type="button"
+                    className={`${styles.legendItemButton} ${
+                      selectedParam === key ? styles.legendItemActive : ""
+                    }`}
+                    onClick={() => handleParameterSelect(key)}
+                  >
+                    <span aria-hidden="true" style={{ "--particle-color": color }} />
+                    <span>{label}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
-        ) : null}
-        {speechError ? (
-          <p aria-live="polite" className={styles.error} role="alert">
-            {speechError}
-          </p>
-        ) : null}
-        {explanationError ? (
-          <p aria-live="polite" className={styles.error} role="alert">
-            {explanationError}
-          </p>
-        ) : null}
-      </div>
 
-    </section>
+          <div className={styles.sceneTip}>
+            <span className={styles.tipBadge}>360° Rotatable</span>
+            <p>
+              Click & drag with your mouse or finger to inspect particulate distribution from any angle.
+            </p>
+          </div>
+        </div>
+      </aside>
+
+    </div>
   );
 }
 
@@ -877,10 +1089,10 @@ function ManualParameterForm({ onAnalysis }) {
   return (
     <section aria-label="Enter water quality measurements" className={styles.manualEntry}>
       <div>
-        <span className={styles.pillTag}>MANUAL WATER TEST</span>
-        <h2 className={styles.actionPlanTitle}>No report? Enter your 8 measurements</h2>
+        <span className={styles.pillTag}>MANUAL WATER ANALYSIS</span>
+        <h2 className={styles.actionPlanTitle}>Enter Standard Water Quality Measurements</h2>
         <p className={styles.intro}>
-          Enter the values from your water test. Units are shown beside each field.
+          Input laboratory test figures below to generate an instant potability assessment, 3D molecular simulation, and filtration recommendations.
         </p>
       </div>
       <form className={styles.manualForm} onSubmit={handleSubmit}>
@@ -890,7 +1102,10 @@ function ManualParameterForm({ onAnalysis }) {
             htmlFor={`manual-${parameter.toLowerCase().replace(/\s+/g, "-")}`}
             key={parameter}
           >
-            <span>{parameter}{unit ? ` (${unit})` : ""}</span>
+            <span>
+              {parameter}
+              {unit ? ` (${unit})` : ""}
+            </span>
             <input
               id={`manual-${parameter.toLowerCase().replace(/\s+/g, "-")}`}
               name={parameter}
@@ -905,15 +1120,17 @@ function ManualParameterForm({ onAnalysis }) {
           </label>
         ))}
         <button
-          className={`${styles.btn} ${styles.btnPrimary}`}
+          className={styles.btnPrimary}
           disabled={isSubmitting}
           type="submit"
         >
-          {isSubmitting ? "Analyzing measurements…" : "Analyze measurements"}
+          {isSubmitting ? "Evaluating measurements…" : "Evaluate measurements"}
         </button>
       </form>
       {error ? (
-        <p aria-live="polite" className={styles.error} role="alert">{error}</p>
+        <p aria-live="polite" className={styles.error} role="alert">
+          {error}
+        </p>
       ) : null}
     </section>
   );

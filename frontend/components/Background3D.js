@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import styles from "./Background3D.module.css";
 
 /**
@@ -96,8 +97,14 @@ function createCausticTexture(THREE) {
  */
 export default function Background3D() {
   const hostRef = useRef(null);
+  const pathname = usePathname();
 
   useEffect(() => {
+    if (pathname?.startsWith("/history")) return;
+    // Keep the decorative full-screen scene off narrow screens. The interactive
+    // water-quality scene remains available where report data is shown.
+    if (window.matchMedia("(max-width: 760px)").matches) return;
+
     let disposed = false;
     let animationFrameId = null;
     let renderer = null;
@@ -129,7 +136,7 @@ export default function Background3D() {
           antialias: true,
           powerPreference: "low-power",
         });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
         renderer.setSize(width, height);
         renderer.setClearColor(0x000000, 0);
 
@@ -348,9 +355,18 @@ export default function Background3D() {
         // 8. Animation & Fluid Physics Loop
         // -------------------------------------------------------------
         const clock = new THREE.Clock();
+        const minFrameInterval = 1000 / 30;
+        let lastFrameTime = 0;
 
         const render = () => {
-          if (disposed) return;
+          if (disposed || document.hidden) return;
+
+          const now = performance.now();
+          if (now - lastFrameTime < minFrameInterval) {
+            animationFrameId = window.requestAnimationFrame(render);
+            return;
+          }
+          lastFrameTime = now;
 
           const delta = Math.min(clock.getDelta(), 0.1);
           const elapsed = clock.getElapsedTime();
@@ -429,9 +445,20 @@ export default function Background3D() {
           animationFrameId = window.requestAnimationFrame(render);
         };
 
+        const onVisibilityChange = () => {
+          if (document.hidden) {
+            if (animationFrameId) window.cancelAnimationFrame(animationFrameId);
+            return;
+          }
+
+          render();
+        };
+        document.addEventListener("visibilitychange", onVisibilityChange);
+
         render();
 
         return () => {
+          document.removeEventListener("visibilitychange", onVisibilityChange);
           window.removeEventListener("pointermove", onPointerMove);
           window.removeEventListener("resize", onResize);
         };
@@ -463,12 +490,12 @@ export default function Background3D() {
         }
       }
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <div
       aria-hidden="true"
-      className={styles.canvasContainer}
+      className={`${styles.canvasContainer} ${pathname?.startsWith("/history") ? styles.staticBackground : ""}`}
       ref={hostRef}
     />
   );

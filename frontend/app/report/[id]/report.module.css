@@ -1,67 +1,183 @@
-.meta {
-  color: rgba(192, 214, 227, 0.8);
-  font-size: 12px;
-}
-
-.score {
-  margin-top: 14px;
-  color: #9fefff;
-  font-size: 18px;
-  font-weight: 750;
-}
-
-.tableWrap {
-  margin-top: 20px;
-  overflow-x: auto;
-}
-
-.table {
+.reportContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   width: 100%;
-  border-collapse: collapse;
-  text-align: left;
 }
 
-.table th,
-.table td {
-  padding: 12px 8px;
-  border-bottom: 1px solid rgba(154, 219, 255, 0.12);
-  font-size: 13px;
+.reportMetaBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(14px);
 }
 
-.table th {
-  color: rgba(199, 219, 232, 0.82);
-  font-size: 11px;
+.metaItems {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.status {
-  text-transform: capitalize;
+.metaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
-.sectionTitle {
-  margin-top: 24px;
-  color: #dffbff;
-  font-size: 16px;
-}
-
-.recommendations {
-  display: grid;
-  gap: 8px;
-  margin-top: 10px;
-  padding-left: 20px;
-  font-size: 13px;
-  color: rgba(219, 235, 241, 0.9);
-}
-
-.back {
-  margin-top: 22px;
-}
-
-.back a {
-  color: #8fe7ff;
+/* Button styles */
+.btnBackTop {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--r-md);
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid var(--border-strong);
+  color: var(--text-strong);
+  font-size: 0.84rem;
   font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
 }
 
-.error {
-  color: #ffd7d2;
-  overflow-wrap: anywhere;
+.btnBackTop:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: var(--primary);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btnBackSmall {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.btnBackSmall:hover {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: var(--primary);
+  color: var(--text-strong);
+}
+
+.btnBack {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: var(--r-md);
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid var(--border-strong);
+  color: var(--text-strong);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.btnBack:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: var(--r-md);
+  background: var(--grad-primary);
+  color: #031422;
+  font-size: 0.88rem;
+  font-weight: 750;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(56, 189, 248, 0.28);
+  transition: all 0.15s ease;
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(56, 189, 248, 0.38);
+}
+
+/* State cards */
+.stateCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  gap: 14px;
+}
+
+.stateCard h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.stateCard p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  max-width: 460px;
+  line-height: 1.55;
+}
+
+.errorCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: var(--r-md);
+  background: var(--danger-bg);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #fecdd3;
+  font-size: 0.88rem;
+}
+
+.errorCard p {
+  margin: 0;
+}
+
+.spin {
+  animation: spin 0.85s linear infinite;
+  color: var(--primary);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

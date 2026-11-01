@@ -68,7 +68,7 @@ export default function ProfilePage() {
         <>
           <p>You are not signed in.</p>
           <p>
-            <Link href="/login">Sign in</Link>
+            <Link href="/login" className={styles.signInButton}>Sign In</Link>
           </p>
         </>
       )}

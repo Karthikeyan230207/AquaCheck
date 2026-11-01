@@ -23,6 +23,14 @@ export default function UploadPage() {
   const [savedReportId, setSavedReportId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  function selectFile(selectedFile) {
+    if (!selectedFile) return;
+    setFile(selectedFile);
+    setError("");
+    setSavedReportId("");
+    setResult(null);
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     if (!file) {
@@ -79,7 +87,7 @@ export default function UploadPage() {
 
   return (
     <AppShell>
-      <section className={styles.content}>
+      <section className={`${styles.content} ${result ? styles.contentWide : ""}`}>
         <p className={styles.eyebrow}>
           <UploadIcon size={13} strokeWidth={2.6} aria-hidden="true" />
           WATER QUALITY CHECK
@@ -91,28 +99,38 @@ export default function UploadPage() {
           ranges.
         </p>
 
-        <form className={styles.uploadForm} onSubmit={handleSubmit}>
-          <label className={styles.fileLabel} htmlFor="report-file">
+        <form aria-busy={isSubmitting} className={styles.uploadForm} onSubmit={handleSubmit}>
+          <label
+            className={`${styles.fileLabel} ${isDragging ? styles.fileLabelDragging : ""}`}
+            htmlFor="report-file"
+            onDragEnter={(event) => { event.preventDefault(); setIsDragging(true); }}
+            onDragOver={(event) => event.preventDefault()}
+            onDragLeave={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setIsDragging(false);
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              setIsDragging(false);
+              selectFile(event.dataTransfer.files?.[0]);
+            }}
+          >
             <span className={styles.fileIcon} aria-hidden="true">
               <FileText size={22} strokeWidth={2.1} />
             </span>
             <span>
-              <strong>{file ? file.name : "Choose a PDF or image report"}</strong>
+              <strong>{file ? file.name : "Choose or drop a report here"}</strong>
               <small>PDF, JPG, JPEG, or PNG · scanned reports use OCR</small>
             </span>
           </label>
           <input
             accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
             className={styles.fileInput}
+            disabled={isSubmitting}
             id="report-file"
-            onChange={(event) => {
-              setFile(event.target.files?.[0] || null);
-              setError("");
-              setSavedReportId("");
-              setResult(null);
-            }}
+            onChange={(event) => selectFile(event.target.files?.[0])}
             type="file"
           />
+          {file && <p className={styles.selectedFile} title={file.name}>{file.name}</p>}
           <button
             className={styles.submitButton}
             disabled={isSubmitting || authLoading}
@@ -121,6 +139,13 @@ export default function UploadPage() {
             {isSubmitting ? "Analyzing report…" : "Analyze report"}
           </button>
         </form>
+
+        {isSubmitting && (
+          <p className={styles.processing} role="status" aria-live="polite">
+            <span className={styles.spinner} aria-hidden="true" />
+            Reading your report. Scanned pages can take a little longer.
+          </p>
+        )}
 
         {error && (
           <p className={styles.error} role="alert">
@@ -180,7 +205,7 @@ function AnalysisResult({
       {savedReportId ? (
         <p className={styles.saveNotice} role="status">
           Saved to your account.{" "}
-          <Link href={`/report/${savedReportId}`}>View saved report</Link>
+          <Link href={`/report/${savedReportId}`} className={styles.btnActionInline}>View saved report →</Link>
         </p>
       ) : authLoading ? (
         <p className={styles.saveNotice}>Checking whether this report can be saved…</p>
@@ -192,7 +217,7 @@ function AnalysisResult({
       ) : !user || !accessToken ? (
         <p className={styles.saveNotice}>
           This analysis is not saved.{" "}
-          <Link href="/login">Sign in</Link> before your next upload to keep it
+          <Link href="/login" className={styles.btnActionInline}>Sign in</Link> before your next upload to keep it
           in your report history.
         </p>
       ) : null}

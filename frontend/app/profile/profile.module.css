@@ -29,3 +29,5 @@
   font-size: 13px;
   overflow-wrap: anywhere;
 }
+
+.signInButton { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 18px; border-radius: 10px; background: linear-gradient(135deg, #38bdf8 0%, #2dd4bf 100%); color: #031422; font-weight: 750; font-size: 0.86rem; text-decoration: none; margin-top: 10px; transition: all 0.15s ease; } .signInButton:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(56, 189, 248, 0.32); }

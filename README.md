@@ -163,21 +163,6 @@ The explanation reuses the deterministic analysis results; it does not make new 
 
 ---
 
-## 📈 6. Interactive Dashboard
-
-The dashboard is designed to present:
-
-* Overall report summary
-* Parameter values
-* Reference ranges
-* Status indicators
-* Charts
-* Historical trends
-* Plain-language explanations
-* Recommendations
-
-The goal is to make technical water-quality information easier to understand at a glance.
-
 ---
 
 ## 📚 7. Report History
@@ -214,7 +199,7 @@ server-side and report queries are scoped to that identity.
                          ┌──────────────────────┐
                          │    Next.js Frontend  │
                          │                      │
-                         │ Dashboard            │
+                         │ Analysis reports     │
                          │ Upload               │
                          │ Reports              │
                          │ Charts               │
@@ -430,7 +415,7 @@ Natural Language Explanation
 ```text
 Analysis
    ↓
-Dashboard
+Analysis report
    ↓
 Charts + Status + Explanation
 ```

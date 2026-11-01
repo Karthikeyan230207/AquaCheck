@@ -62,7 +62,7 @@ const features = [
   },
   {
     icon: Languages,
-    title: "5 languages",
+    title: "2 languages",
     description: "Explanations in English, हिंदी, தமிழ், Español, and Français.",
   },
   {
@@ -102,31 +102,31 @@ export default function Home() {
           <p className={styles.eyebrow}>CLEARER WATER. SMARTER ACTION.</p>
           <h1>Turn every water report into a clear, confident decision.</h1>
           <p className={styles.lede}>
-            AquaCheck helps you read complex lab results through a clean dashboard,
-            plain-language explanations, and water-specific insights that feel easy to trust.
+            AquaCheck helps you understand lab results with clear explanations and
+            practical water-quality insights.
           </p>
 
           <div className={styles.ctaRow}>
             <Link className={styles.primaryButton} href="/upload">
               Analyze a report <ArrowRight size={18} strokeWidth={2.4} aria-hidden="true" />
             </Link>
-            <Link className={styles.secondaryButton} href="/dashboard">
-              View dashboard
+            <Link className={styles.secondaryButton} href="/history">
+              Saved reports
             </Link>
           </div>
 
           <div className={styles.metrics}>
             <div>
-              <strong>8+</strong>
-              <span>Water parameters</span>
+              <strong>{parameters.length}</strong>
+              <span>Screened parameters</span>
             </div>
             <div>
-              <strong>100%</strong>
-              <span>Rule-based insights</span>
+              <strong>PDF + image</strong>
+              <span>Supported formats</span>
             </div>
             <div>
-              <strong>24/7</strong>
-              <span>Water screening</span>
+              <strong>OCR</strong>
+              <span>For scanned reports</span>
             </div>
           </div>
         </div>
@@ -134,31 +134,14 @@ export default function Home() {
         <div className={styles.previewShell} aria-label="Example water analysis summary">
           <div className={styles.previewHeader}>
             <div>
-              <span className={styles.previewLabel}>LIVE REPORT</span>
-              <h2>Water quality profile</h2>
+              <span className={styles.previewLabel}>ILLUSTRATIVE PREVIEW</span>
+              <h2>Sample water profile</h2>
             </div>
-            <span className={styles.previewStatus}>
-              <CheckCircle2 size={13} strokeWidth={2.6} aria-hidden="true" />
-              Healthy
-            </span>
           </div>
           <div className={styles.previewScene}>
             <WaterQualityScene parameters={sampleParameters} viewMode="normal" />
           </div>
-          <div className={styles.previewStats}>
-            <div>
-              <span>pH</span>
-              <strong>7.4</strong>
-            </div>
-            <div>
-              <span>TDS</span>
-              <strong>210</strong>
-            </div>
-            <div>
-              <span>Score</span>
-              <strong>92/100</strong>
-            </div>
-          </div>
+          <p className={styles.previewNote}>Example particles only; no report is being assessed.</p>
         </div>
       </section>
 

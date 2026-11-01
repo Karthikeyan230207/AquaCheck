@@ -1,69 +1,89 @@
 .wrap {
-  width: min(100%, 900px);
+  width: min(100%, 960px);
   margin: 0 auto;
-  padding: 48px 24px 64px;
+  padding: 40px 24px 64px;
+}
+
+.wrapWide {
+  width: min(100%, 1480px);
+  padding: 28px 28px 40px;
 }
 
 .head {
-  margin-bottom: 26px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.headContent {
+  flex: 1;
+  min-width: 280px;
+}
+
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 12px;
-  color: var(--cyan);
+  margin-bottom: 10px;
+  color: var(--primary);
   font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
+  font-weight: 750;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .title {
-  font-size: clamp(2rem, 4.5vw, 3rem);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1.05;
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  color: var(--text-strong);
 }
 
 .description {
-  max-width: 620px;
-  margin-top: 14px;
+  max-width: 680px;
+  margin-top: 10px;
   color: var(--muted);
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 0.95rem;
+  line-height: 1.6;
 }
 
 .body {
-  padding: 26px 24px;
+  padding: 26px 28px;
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
-  background: var(--grad-surface);
+  background: var(--surface);
   box-shadow: var(--shadow-md);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(14px);
   color: var(--text);
-  line-height: 1.7;
+  line-height: 1.65;
+}
+
+.bodyWide {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .body p + p {
   margin-top: 12px;
 }
 
-.body a {
-  color: var(--cyan);
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.body a:hover {
-  color: var(--primary);
-}
-
-@media (max-width: 620px) {
-  .wrap {
-    padding: 32px 16px 48px;
+@media (max-width: 768px) {
+  .wrap,
+  .wrapWide {
+    padding: 24px 16px 48px;
   }
   .body {
     padding: 20px 16px;
