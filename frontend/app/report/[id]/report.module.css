@@ -181,3 +181,83 @@
     transform: rotate(360deg);
   }
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm;
+  }
+
+  :global(html):has(.reportContainer) {
+    color-scheme: light;
+  }
+
+  :global(body):has(.reportContainer) {
+    min-height: 0;
+    background: #fff !important;
+    color: #111827 !important;
+    font-family: Arial, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  :global(body):has(.reportContainer) > :global(.appContentWrapper),
+  :global(body):has(.reportContainer) > :global(.appContentWrapper) > :global(div),
+  :global(body):has(.reportContainer) > :global(.appContentWrapper) > :global(div) > :global(main) {
+    display: block !important;
+    width: 100%;
+    min-height: 0;
+    background: #fff !important;
+  }
+
+  :global(main):has(.reportContainer) > :global(section) {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  :global(main):has(.reportContainer) > :global(section) > :global(header) {
+    margin-bottom: 10pt;
+    padding-bottom: 8pt;
+    border-bottom: 1px solid #d1d5db;
+  }
+
+  :global(main):has(.reportContainer) > :global(section) > :global(header) h1 {
+    color: #111827;
+    font-size: 20pt;
+  }
+
+  :global(main):has(.reportContainer) > :global(section) > :global(header) p {
+    color: #374151;
+  }
+
+  :global(body):has(.reportContainer) > :global(.appContentWrapper) > :global(div) > :global(header),
+  :global(body):has(.reportContainer) > :global(.appContentWrapper) > :global(div) > :global(footer) {
+    display: none !important;
+  }
+
+  :global(main):has(.reportContainer) > :global(section) > :global(header) > :global(div:last-child) {
+    display: none !important;
+  }
+
+  .reportContainer {
+    display: block;
+  }
+
+  .reportMetaBar {
+    margin-bottom: 12pt;
+    padding: 7pt 9pt;
+    border: 1px solid #d1d5db;
+    border-radius: 0;
+    background: #fff;
+    color: #374151;
+  }
+
+  .metaChip {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #374151;
+  }
+}

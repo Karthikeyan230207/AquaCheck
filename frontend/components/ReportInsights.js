@@ -17,7 +17,6 @@ import {
   Microscope,
   OctagonAlert,
   Printer,
-  RefreshCw,
   ShieldCheck,
   Smile,
   Sparkles,
@@ -50,110 +49,54 @@ const MANUAL_PARAMETERS = [
   { parameter: "Iron", unit: "mg/L", step: "any" },
 ];
 
-// Professional, human-designed parameter explanations (clinical & practical household implications)
+// Everyday explanations for water-test measurements.
 const PARAMETER_DETAILS = {
   pH: {
-    category: "Chemical Balance",
-    title: "pH (Acidity & Alkalinity)",
-    simple:
-      "Measures whether water is acidic, neutral, or alkaline. Balanced pH (6.5 – 8.5) protects pipes from metallic corrosion and provides a smooth, refreshing taste.",
-    impactGood: "Optimal balance — neutral, gentle on plumbing, and refreshing.",
-    impactBad:
-      "Acidic water can leach metals from copper pipes, while highly alkaline water causes bitter taste and mineral scaling.",
-    actionGood: "No chemical neutralization required.",
-    actionBad:
-      "Install an inline calcite neutralizer filter (for low pH) or specialized pH correction cartridge.",
+    title: "Water's acid balance",
+    simple: "Shows how acidic or alkaline (not acidic) the water is. Very high or low readings can affect taste and pipes.",
+    actionBad: "This result is outside the suggested range. Ask a water-testing lab what it means.",
     icon: Gauge,
   },
   TDS: {
-    category: "Dissolved Minerals",
-    title: "TDS (Total Dissolved Solids)",
-    simple:
-      "Total combined concentration of dissolved minerals, salts, and inorganic compounds. Moderate levels (< 500 mg/L) provide healthy minerals, while elevated levels cause a salty or mineral taste.",
-    impactGood: "Fresh, crisp taste with wholesome mineral balance.",
-    impactBad:
-      "High mineral content leaves white chalky deposits on kettles and fixtures, and can cause a heavy mineral taste.",
-    actionGood: "Mineral concentration is within the ideal drinking range.",
-    actionBad:
-      "Install a point-of-use Reverse Osmosis (RO) drinking system to lower dissolved mineral salts.",
+    title: "Dissolved salts and minerals",
+    simple: "Counts salts and minerals mixed into the water. High amounts can change its taste.",
+    actionBad: "Ask a water-testing lab whether a home water filter would help.",
     icon: Layers,
   },
   Turbidity: {
-    category: "Physical Clarity",
-    title: "Turbidity (Clarity & Sediment)",
-    simple:
-      "The optical haziness caused by suspended microscopic matter such as silt, organic dust, or clay. Clean drinking water must be crystal clear.",
-    impactGood: "Crystal clear optical clarity meeting WHO guidelines.",
-    impactBad:
-      "Cloudiness can shelter microorganisms, reduce the efficacy of UV disinfection, and cause sediment buildup in appliances.",
-    actionGood: "Water is optically clear with no suspended silt.",
-    actionBad:
-      "Install a 5-micron spun polypropylene sediment pre-filter to clarify incoming water.",
+    title: "Cloudiness",
+    simple: "Tells how cloudy the water is. Cloudiness often comes from tiny particles.",
+    actionBad: "If the water looks cloudy, have it checked before drinking it.",
     icon: Eye,
   },
   "Total Hardness": {
-    category: "Mineral Hardness",
-    title: "Total Hardness (Ca & Mg)",
-    simple:
-      "Concentration of dissolved calcium and magnesium. Hard water creates chalky limescale inside geysers, boilers, and fixtures, reducing appliance efficiency.",
-    impactGood: "Moderate hardness — provides dietary minerals without scaling appliances.",
-    impactBad:
-      "Limescale reduces water heater efficiency and leaves residue on bathroom tiles and glassware.",
-    actionGood: "No water softener needed.",
-    actionBad:
-      "Install an ion-exchange water softening unit to protect heaters, washing machines, and plumbing.",
+    title: "Minerals that cause scale",
+    simple: "Measures minerals that can leave white marks on taps, dishes, and kettles.",
+    actionBad: "A water softener may help reduce marks on taps and appliances.",
     icon: Waves,
   },
   Chloride: {
-    category: "Inorganic Salts",
-    title: "Chloride (Salts)",
-    simple:
-      "Naturally occurring salt compound present in groundwater and coastal aquifers. High chloride gives water a briny taste and accelerates metal corrosion.",
-    impactGood: "Standard level with no briny or brackish flavor.",
-    impactBad:
-      "Salty aftertaste and potential pitting corrosion in stainless steel fixtures and hot water tanks.",
-    actionGood: "Within normal taste and corrosion thresholds.",
-    actionBad:
-      "Point-of-use Reverse Osmosis (RO) filtration is recommended to eliminate excess salinity.",
+    title: "Salt in the water",
+    simple: "Measures salt in the water. High amounts can make it taste salty.",
+    actionBad: "Ask a water-testing lab to check why the salt level is high.",
     icon: Droplets,
   },
   Fluoride: {
-    category: "Trace Minerals",
-    title: "Fluoride (Dental Enamel)",
-    simple:
-      "A trace mineral that protects tooth enamel at moderate levels (~0.7 mg/L). Excessive fluoride can cause dental fluorosis or mottling in developing teeth.",
-    impactGood: "Protective concentration safe for all age groups.",
-    impactBad:
-      "Exceeds recommended guidelines. Chronic exposure in children can lead to tooth staining and dental fluorosis.",
-    actionGood: "Within safe and protective dental health guidelines.",
-    actionBad:
-      "Install activated alumina or high-rejection RO membrane filtration to remove excess fluoride.",
+    title: "Fluoride for healthy teeth",
+    simple: "A small amount helps protect teeth. Too much over time can leave marks on teeth.",
+    actionBad: "Ask a dentist or water-testing lab what this result means, especially for children.",
     icon: Smile,
   },
   Nitrate: {
-    category: "Chemical Contaminant",
-    title: "Nitrate (Agricultural Runoff)",
-    simple:
-      "Inorganic nitrogen compound from agricultural fertilizers, septic tanks, and livestock waste. High levels reduce oxygen transport in the bloodstream.",
-    impactGood: "Clean and safe — free of hazardous agricultural contamination.",
-    impactBad:
-      "Health Alert: Poses serious oxygen-deprivation risk to infants ('blue baby syndrome') and pregnant women.",
-    actionGood: "Safe for baby formula and direct household consumption.",
-    actionBad:
-      "CRITICAL: Do not use for baby formula or direct drinking until purified via RO or distillation.",
+    title: "Nitrate from soil and fertilizer",
+    simple: "Can get into water from fertilizer or waste. High amounts can be harmful, especially to babies.",
+    actionBad: "Do not use this water for baby formula. Ask a water-testing lab what to do.",
     icon: Sprout,
   },
   Iron: {
-    category: "Heavy Metals",
-    title: "Iron (Pipe Corrosion & Soil)",
-    simple:
-      "Secondary mineral leached from natural iron-bearing soils or aging iron plumbing. Excess iron produces a metallic taste and stains fixtures and laundry.",
-    impactGood: "Clear water with no metallic odor, taste, or staining.",
-    impactBad:
-      "Produces reddish-brown stains on sanitaryware and laundry, plus an astringent metallic aftertaste.",
-    actionGood: "No iron contamination or pipe leaching detected.",
-    actionBad:
-      "Install an oxidizing iron/manganese filter or inspect older galvanized supply lines.",
+    title: "Iron that can leave rust marks",
+    simple: "Can give water a metal taste and leave orange-brown marks on sinks and clothes.",
+    actionBad: "Check for rusty pipes and ask a water-testing lab what to do.",
     icon: Wrench,
   },
 };
@@ -175,32 +118,6 @@ function formatRange(min, max, unit) {
   }
   if (min != null) return `≥ ${min} ${unit}`.trim();
   return `≤ ${max} ${unit}`.trim();
-}
-
-function calculateMeter(param) {
-  if (param.value == null || typeof param.value !== "number") return null;
-  const val = param.value;
-  const min = param.reference_minimum ?? 0;
-  const max = param.reference_maximum ?? param.permissible_maximum ?? (val * 1.5 || 10);
-
-  const lowerBound = Math.min(min * 0.8, val * 0.8, 0);
-  const upperBound = Math.max(max * 1.25, val * 1.15, max + 1);
-  const span = upperBound - lowerBound || 1;
-
-  const valuePercent = Math.min(100, Math.max(0, ((val - lowerBound) / span) * 100));
-  const safeLeft = Math.min(100, Math.max(0, ((min - lowerBound) / span) * 100));
-  const safeWidth = Math.min(100 - safeLeft, Math.max(6, (((max - min) / span) * 100)));
-
-  return {
-    valuePercent,
-    safeLeft,
-    safeWidth,
-    minDisplay: param.reference_minimum != null ? param.reference_minimum : "0",
-    maxDisplay:
-      param.reference_maximum != null
-        ? param.reference_maximum
-        : param.permissible_maximum ?? "—",
-  };
 }
 
 export default function ReportInsights({
@@ -231,13 +148,21 @@ export default function ReportInsights({
   const verdict = useMemo(() => {
     if (!currentAnalysis?.parameters || currentAnalysis.parameters.length === 0) {
       return {
-        level: "unknown",
-        badge: "INCOMPLETE DATASET",
-        headline: "More Measurements Needed",
+        badge: "NO MEASUREMENTS",
+        headline: "No numeric results to show",
         subline:
-          "This report does not contain enough recognized measurements for a complete screening result.",
-        color: "#94a3b8",
-        bg: "rgba(148, 163, 184, 0.08)",
+          "The report did not include any readable measurement values. Try a clearer image or enter the values manually.",
+        icon: CircleHelp,
+      };
+    }
+
+    const hasMeasuredValues = currentAnalysis.parameters.some((p) => p.status !== "unavailable");
+    if (!hasMeasuredValues) {
+      return {
+        badge: "NO MEASUREMENTS",
+        headline: "No numeric results to show",
+        subline:
+          "The report did not include any readable measurement values. Try a clearer image or enter the values manually.",
         icon: CircleHelp,
       };
     }
@@ -247,49 +172,42 @@ export default function ReportInsights({
 
     if (hasDanger) {
       return {
-        level: "danger",
         badge: "OUTSIDE APPLIED RANGE",
         headline: "Some Measurements Need Review",
         subline:
           "One or more measured values fall outside the reference ranges used in this screening. Review the parameter details and consult a qualified local laboratory about next steps.",
-        color: "#f43f5e",
-        bg: "rgba(244, 63, 94, 0.08)",
         icon: OctagonAlert,
       };
     }
 
     if (hasWarning) {
       return {
-        level: "warning",
         badge: "REVIEW SUGGESTED",
         headline: "Some Measurements Need Attention",
         subline:
           "One or more measured values are outside the preferred ranges used in this screening. Review the parameter details and any recommendations.",
-        color: "#f59e0b",
-        bg: "rgba(245, 158, 11, 0.08)",
         icon: TriangleAlert,
       };
     }
 
     return {
-      level: "safe",
       badge: "NO FLAGGED RESULTS",
       headline: "Evaluated Measurements Are Within Range",
       subline:
         "All measured parameters with reference ranges in this screening are within range. Unmeasured contaminants are not assessed.",
-      color: "#10b981",
-      bg: "rgba(16, 185, 129, 0.08)",
       icon: ShieldCheck,
     };
   }, [currentAnalysis]);
 
   // Statistics Summary
   const stats = useMemo(() => {
-    if (!currentAnalysis?.parameters) return { total: 0, safe: 0, issues: 0 };
-    const total = currentAnalysis.parameters.length;
+    if (!currentAnalysis?.parameters) return { assessed: 0, safe: 0, issues: 0 };
+    const assessed = currentAnalysis.parameters.filter((p) => p.status !== "unavailable").length;
     const safe = currentAnalysis.parameters.filter((p) => p.status === "within_range").length;
-    const issues = total - safe;
-    return { total, safe, issues };
+    const issues = currentAnalysis.parameters.filter(
+      (p) => p.status === "outside_range" || p.status === "attention",
+    ).length;
+    return { assessed, safe, issues };
   }, [currentAnalysis]);
 
   // Action Remediation Checklist
@@ -298,83 +216,90 @@ export default function ReportInsights({
     if (!currentAnalysis?.parameters) return actions;
 
     const nit = currentAnalysis.parameters.find(
-      (p) => p.parameter === "Nitrate" && p.status !== "within_range",
+      (p) => p.parameter === "Nitrate" && ["outside_range", "attention"].includes(p.status),
     );
     if (nit) {
       actions.push({
         priority: "CRITICAL",
         category: "Health Hazard",
-        text: "Elevated nitrate detected: Do not use for infant formula or baby food. Install a certified Reverse Osmosis (RO) system or source bottled water.",
+        text: "Do not use this water for baby formula. Ask a certified water professional about safe treatment.",
         icon: Baby,
       });
     }
 
     const turb = currentAnalysis.parameters.find(
-      (p) => p.parameter === "Turbidity" && p.status !== "within_range",
+      (p) => p.parameter === "Turbidity" && ["outside_range", "attention"].includes(p.status),
     );
     if (turb) {
       actions.push({
         priority: "HIGH",
         category: "Sediment Filtration",
-        text: "Cloudiness detected: Install a 5-micron sediment pre-filter to clarify incoming water and protect plumbing appliances.",
+        text: "The water may be cloudy. Use a sediment filter and have the water checked before drinking.",
         icon: Filter,
       });
     }
 
     const tds = currentAnalysis.parameters.find(
-      (p) => p.parameter === "TDS" && p.status !== "within_range",
+      (p) => p.parameter === "TDS" && ["outside_range", "attention"].includes(p.status),
     );
     if (tds) {
       actions.push({
         priority: "MEDIUM",
         category: "Mineral Reduction",
-        text: "High total dissolved solids: Install a kitchen Reverse Osmosis (RO) purification unit to improve palatability and reduce mineral salts.",
+        text: "A reverse-osmosis (RO) filter can reduce dissolved salts and minerals.",
         icon: Droplets,
       });
     }
 
     const hard = currentAnalysis.parameters.find(
-      (p) => p.parameter === "Total Hardness" && p.status !== "within_range",
+      (p) => p.parameter === "Total Hardness" && ["outside_range", "attention"].includes(p.status),
     );
     if (hard) {
       actions.push({
         priority: "MEDIUM",
         category: "Scale Mitigation",
-        text: "Hard water minerals: Install an ion-exchange water softener to prevent scale buildup on heating elements and plumbing fixtures.",
+        text: "A water softener can reduce scale on taps and appliances.",
         icon: Sparkles,
       });
     }
 
     const fe = currentAnalysis.parameters.find(
-      (p) => p.parameter === "Iron" && p.status !== "within_range",
+      (p) => p.parameter === "Iron" && ["outside_range", "attention"].includes(p.status),
     );
     if (fe) {
       actions.push({
         priority: "MEDIUM",
         category: "Corrosion & Taste",
-        text: "Iron content detected: Install an oxidizing iron filter or inspect galvanized supply lines to eliminate metallic taste and rust stains.",
+        text: "Check for rusty pipes. An iron filter can help reduce stains and metallic taste.",
         icon: Wrench,
       });
     }
 
     const ph = currentAnalysis.parameters.find(
-      (p) => p.parameter === "pH" && p.status !== "within_range",
+      (p) => p.parameter === "pH" && ["outside_range", "attention"].includes(p.status),
     );
     if (ph) {
       actions.push({
         priority: "LOW",
         category: "pH Stabilization",
-        text: "Imbalanced pH: Consider an inline calcite neutralizing filter to protect metal plumbing against accelerated corrosion or scaling.",
+        text: "Ask a water professional whether pH treatment is needed.",
         icon: Gauge,
       });
     }
 
-    if (actions.length === 0) {
+    if (actions.length === 0 && currentAnalysis.parameters.some((p) => p.status !== "unavailable")) {
       actions.push({
         priority: "ROUTINE",
         category: "Standard Monitoring",
-        text: "All tested parameters meet quality benchmarks. Schedule routine annual water testing or re-test if water taste, clarity, or odor changes.",
+        text: "No issues were flagged in the measured values. Retest if the water’s taste, smell, or appearance changes.",
         icon: CheckCircle2,
+      });
+    } else if (actions.length === 0) {
+      actions.push({
+        priority: "REVIEW",
+        category: "No Readings Found",
+        text: "No numeric measurements were recognized. Try uploading a clearer report or enter your results manually.",
+        icon: CircleHelp,
       });
     }
 
@@ -489,21 +414,16 @@ export default function ReportInsights({
         <section
           aria-label="Executive water quality evaluation"
           className={styles.executiveCard}
-          style={{
-            borderColor: "var(--border-strong)",
-            background: `linear-gradient(135deg, ${verdict.bg} 0%, rgba(6, 20, 32, 0.85) 100%)`,
-          }}
         >
           <div className={styles.executiveHeader}>
             <div className={styles.executiveIdentity}>
-              <div className={styles.executiveIconWrap} style={{ color: verdict.color }}>
+              <div className={styles.executiveIconWrap}>
                 <verdict.icon size={28} strokeWidth={2.2} />
               </div>
               <div>
                 <div className={styles.badgeRow}>
                   <span
                     className={styles.trafficBadge}
-                    style={{ backgroundColor: verdict.color }}
                   >
                     {verdict.badge}
                   </span>
@@ -533,7 +453,7 @@ export default function ReportInsights({
             <div className={styles.kpiItem}>
               <span className={styles.kpiLabel}>Screening score</span>
               <div className={styles.kpiValueRow}>
-                <strong className={styles.kpiValue} style={{ color: verdict.color }}>
+                <strong className={styles.kpiValue}>
                   {currentAnalysis.overall_score != null ? currentAnalysis.overall_score : "—"}
                 </strong>
                 <span className={styles.kpiSub}>/ 100</span>
@@ -543,39 +463,35 @@ export default function ReportInsights({
                   className={styles.kpiBarFill}
                   style={{
                     width: `${Math.min(100, Math.max(0, currentAnalysis.overall_score ?? 0))}%`,
-                    backgroundColor: verdict.color,
                   }}
                 />
               </div>
             </div>
 
             <div className={styles.kpiItem}>
-              <span className={styles.kpiLabel}>Parameters Analyzed</span>
+              <span className={styles.kpiLabel}>Readings analyzed</span>
               <div className={styles.kpiValueRow}>
-                <strong className={styles.kpiValue}>{stats.total}</strong>
-                <span className={styles.kpiSub}>analytes</span>
+                <strong className={styles.kpiValue}>{stats.assessed}</strong>
+                <span className={styles.kpiSub}>values</span>
               </div>
-              <p className={styles.kpiText}>Measurements found in this report</p>
+              <p className={styles.kpiText}>Numeric results evaluated</p>
             </div>
 
             <div className={styles.kpiItem}>
               <span className={styles.kpiLabel}>Within applied range</span>
               <div className={styles.kpiValueRow}>
-                <strong className={styles.kpiValue} style={{ color: "var(--success)" }}>
+                <strong className={styles.kpiValue}>
                   {stats.safe}
                 </strong>
-                <span className={styles.kpiSub}>/ {stats.total} within spec</span>
+                <span className={styles.kpiSub}>/ {stats.assessed} within range</span>
               </div>
               <p className={styles.kpiText}>Of the measurements evaluated</p>
             </div>
 
             <div className={styles.kpiItem}>
-              <span className={styles.kpiLabel}>Remediation Items</span>
+              <span className={styles.kpiLabel}>Needs review</span>
               <div className={styles.kpiValueRow}>
-                <strong
-                  className={styles.kpiValue}
-                  style={{ color: stats.issues > 0 ? "var(--warning)" : "var(--success)" }}
-                >
+                <strong className={styles.kpiValue}>
                   {stats.issues}
                 </strong>
                 <span className={styles.kpiSub}>flagged</span>
@@ -594,10 +510,10 @@ export default function ReportInsights({
         <section aria-label="Remediation action steps" className={styles.actionPlanCard}>
           <div className={styles.cardHeader}>
             <div>
-              <span className={styles.pillTag}>ENGINEERING REMEDIATION</span>
-              <h3 className={styles.actionPlanTitle}>Recommended Action Steps</h3>
+              <span className={styles.pillTag}>NEXT STEPS</span>
+              <h3 className={styles.actionPlanTitle}>What to do next</h3>
               <p className={styles.actionPlanSubtitle}>
-                Actionable engineering solutions prioritized by health urgency and home plumbing impact.
+                Simple actions for any readings that need attention.
               </p>
             </div>
           </div>
@@ -626,14 +542,14 @@ export default function ReportInsights({
           </div>
         </section>
 
-        {/* 3. PARAMETER DIAGNOSTICS & BENCHMARK RANGE METERS */}
+        {/* 3. PLAIN-LANGUAGE PARAMETER EXPLANATIONS */}
         <section aria-label="Tested water parameters" className={styles.diagnosticsSection}>
           <div className={styles.sectionHeadingWrap}>
             <div>
-              <span className={styles.pillTag}>ANALYTE METRICS</span>
-              <h3 className={styles.friendlyTitle}>Water Composition & Clinical Significance</h3>
+              <span className={styles.pillTag}>YOUR RESULTS</span>
+              <h3 className={styles.friendlyTitle}>What each result means</h3>
               <p className={styles.friendlySubtitle}>
-                Tested laboratory measurements compared against safe drinking standards, with practical home implications.
+                Each result explains what the test measures and what the number may mean.
               </p>
             </div>
           </div>
@@ -641,130 +557,87 @@ export default function ReportInsights({
           <div className={styles.friendlyGrid}>
             {currentAnalysis.parameters.map((param) => {
               const info = PARAMETER_DETAILS[param.parameter] || {
-                category: "General Analyte",
                 title: param.parameter,
-                simple: "A standard physical or chemical water test measurement.",
-                impactGood: "Reading is within acceptable limits.",
-                impactBad: "Parameter deviates from the recommended baseline.",
-                actionGood: "No intervention needed.",
-                actionBad: "Consider routine filtration.",
+                simple: "This test checks for this substance or quality in the water.",
+                actionBad: "Ask a water-testing lab what this result means.",
                 icon: Droplets,
               };
               const isGood = param.status === "within_range";
               const isAttention = param.status === "attention";
               const isBad = param.status === "outside_range";
-              const meter = calculateMeter(param);
               const isSelected = selectedParam === param.parameter;
+              const statusLabel = isGood
+                ? "Within range"
+                : isBad
+                  ? "Outside range"
+                  : isAttention
+                    ? "Review"
+                    : "Not measured";
 
               return (
                 <div
                   key={param.parameter}
-                  className={`${styles.paramCard} ${
-                    isBad
-                      ? styles.paramCardBad
-                      : isAttention
-                      ? styles.paramCardWarn
-                      : styles.paramCardGood
-                  } ${isSelected ? styles.paramCardActive : ""}`}
-                  onClick={() => handleParameterSelect(param.parameter)}
+                  className={`${styles.paramCard} ${isSelected ? styles.paramCardActive : ""}`}
                 >
-                  {/* Header: Category & Status */}
-                  <div className={styles.paramCardTop}>
+                  {/* Always-visible header */}
+                  <div className={styles.paramHeader}>
                     <div className={styles.paramHeaderTitle}>
                       <span className={styles.paramIcon}>
                         <info.icon size={20} strokeWidth={2.2} />
                       </span>
                       <div>
-                        <span className={styles.categoryBadge}>{info.category}</span>
                         <h4 className={styles.paramName}>{info.title}</h4>
+                        <span className={styles.paramTechnicalName}>{param.parameter}</span>
                       </div>
                     </div>
                     <span
-                      className={`${styles.statusChip} ${
-                        isBad ? styles.chipRed : isAttention ? styles.chipYellow : styles.chipGreen
-                      }`}
+                      className={`${styles.statusChip} ${styles.chipNeutral}`}
                     >
                       {isBad ? (
-                        <CircleX size={12} strokeWidth={2.4} />
+                        <CircleX size={13} strokeWidth={2.4} />
                       ) : isAttention ? (
-                        <TriangleAlert size={12} strokeWidth={2.4} />
+                        <TriangleAlert size={13} strokeWidth={2.4} />
+                      ) : isGood ? (
+                        <CircleCheck size={13} strokeWidth={2.4} />
                       ) : (
-                        <CircleCheck size={12} strokeWidth={2.4} />
+                        <CircleHelp size={13} strokeWidth={2.4} />
                       )}
-                      {isBad ? "Action Required" : isAttention ? "Attention" : "Within Spec"}
+                      {statusLabel}
                     </span>
                   </div>
 
-                  {/* Plain-Language Clinical Significance */}
+                  {/* Always-visible value display */}
+                  <div className={styles.paramValueBlock}>
+                    <span className={styles.paramValueLabel}>Measured</span>
+                    <strong className={styles.paramValueBig}>
+                      {param.value != null ? param.value : "—"}
+                    </strong>
+                    <span className={styles.paramValueUnit}>{param.unit || ""}</span>
+                  </div>
+
+                  {/* Description & advice */}
                   <p className={styles.paramDescription}>{info.simple}</p>
-
-                  {/* Visual Benchmark Range Meter */}
-                  {meter && (
-                    <div className={styles.meterContainer}>
-                      <div className={styles.meterLabels}>
-                        <span>Target: {meter.minDisplay} – {meter.maxDisplay} {param.unit}</span>
-                        <span className={styles.meterReadingText}>
-                          Reading: <strong>{param.value} {param.unit}</strong>
-                        </span>
-                      </div>
-                      <div className={styles.meterTrack}>
-                        <div
-                          className={styles.meterSafeZone}
-                          style={{
-                            left: `${meter.safeLeft}%`,
-                            width: `${meter.safeWidth}%`,
-                          }}
-                        />
-                        <div
-                          className={styles.meterMarker}
-                          style={{
-                            left: `${meter.valuePercent}%`,
-                            backgroundColor: isBad
-                              ? "var(--danger)"
-                              : isAttention
-                              ? "var(--warning)"
-                              : "var(--success)",
-                          }}
-                        />
-                      </div>
+                  {isBad || isAttention || param.status === "unavailable" ? (
+                    <div className={styles.adviceBox}>
+                      <strong className={styles.adviceLabel}>
+                        {param.status === "unavailable" ? "Note:" : "What to do:"}
+                      </strong>{" "}
+                      <span>
+                        {param.status === "unavailable"
+                          ? "No numeric result was found, so this parameter was not assessed."
+                          : info.actionBad}
+                      </span>
                     </div>
-                  )}
-
-                  {/* Practical Advice Banner */}
-                  <div
-                    className={`${styles.adviceBox} ${
-                      isBad
-                        ? styles.adviceBoxBad
-                        : isAttention
-                        ? styles.adviceBoxWarn
-                        : styles.adviceBoxGood
-                    }`}
+                  ) : null}
+                  <button
+                    type="button"
+                    className={`${styles.btnChipSm} ${isSelected ? styles.btnChipSmActive : ""}`}
+                    onClick={() => handleParameterSelect(param.parameter)}
+                    title="Highlight this parameter in the 3D water simulation"
                   >
-                    <strong className={styles.adviceLabel}>Recommendation:</strong>{" "}
-                    <span>{isGood ? info.actionGood : info.actionBad}</span>
-                  </div>
-
-                  {/* Card Footer: Button to highlight in 3D */}
-                  <div className={styles.paramFooter}>
-                    <div className={styles.paramFooterData}>
-                      <span>Tested Value:</span>
-                      <strong>
-                        {param.value != null ? `${param.value} ${param.unit}` : "Not detected"}
-                      </strong>
-                    </div>
-                    <button
-                      type="button"
-                      className={`${styles.btnChipSm} ${isSelected ? styles.btnChipSmActive : ""}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleParameterSelect(param.parameter);
-                      }}
-                      title="Isolate particle in the 3D water simulation"
-                    >
-                      <Microscope size={13} strokeWidth={2.2} />
-                      <span>{isSelected ? "Isolating in 3D" : "View in 3D Glass"}</span>
-                    </button>
-                  </div>
+                    <Microscope size={13} strokeWidth={2.2} />
+                    <span>{isSelected ? "Remove 3D highlight" : "Highlight in 3D"}</span>
+                  </button>
                 </div>
               );
             })}
@@ -849,10 +722,10 @@ export default function ReportInsights({
         <section aria-label="AI summary and language translation" className={styles.explanation}>
           <div className={styles.aiStoryHeader}>
             <div>
-              <span className={styles.pillTag}>INTELLIGENT DIAGNOSTICS</span>
-              <h4 className={styles.actionPlanTitle}>AI Water Quality Executive Summary</h4>
+              <span className={styles.pillTag}>WATER SUMMARY</span>
+              <h4 className={styles.actionPlanTitle}>Plain-language summary</h4>
               <p className={styles.intro}>
-                Synthesized natural language summary tailored for homeowners, facility managers, and families. Choose your preferred language below.
+                Get a short explanation of your results in English or Tamil.
               </p>
             </div>
             {/* Language Selector */}
@@ -881,20 +754,20 @@ export default function ReportInsights({
 
           {!explanation && !loading ? (
             <button
-              className={styles.btnPrimary}
+              className={styles.btnSecondary}
               disabled={loading}
               onClick={() => requestExplanation()}
               type="button"
             >
               <BookOpen size={16} strokeWidth={2.2} />
-              <span>Generate Summary ({LANGUAGES.find((l) => l.code === selectedLang)?.label ?? "English"})</span>
+              <span>Show summary ({LANGUAGES.find((l) => l.code === selectedLang)?.label ?? "English"})</span>
             </button>
           ) : null}
 
           {loading ? (
             <div className={styles.loadingRow}>
               <span className={styles.loadingSpinner} aria-hidden="true" />
-              <span>Analyzing laboratory figures and synthesizing summary…</span>
+              <span>Putting your results into simple words…</span>
             </div>
           ) : null}
 
@@ -906,19 +779,6 @@ export default function ReportInsights({
                 .map((para, i) => (
                   <p key={i}>{para}</p>
                 ))}
-              <div className={styles.retryRow}>
-                <button
-                  className={styles.btnSecondary}
-                  onClick={() => {
-                    setExplanation("");
-                    requestExplanation();
-                  }}
-                  type="button"
-                >
-                  <RefreshCw size={15} strokeWidth={2.2} />
-                  <span>Regenerate Summary</span>
-                </button>
-              </div>
             </div>
           ) : null}
 
@@ -934,6 +794,14 @@ export default function ReportInsights({
       {/* ============================================================
           RIGHT COLUMN: Sticky / Fixed 3D Water Glass & Inspector
          ============================================================ */}
+      <details className={styles.visualizationDetails}>
+        <summary className={styles.visualizationSummary}>
+          <span>
+            <Microscope size={17} aria-hidden="true" />
+            Explore water particles in 3D
+          </span>
+          <ChevronDown size={18} aria-hidden="true" />
+        </summary>
       <aside className={styles.stickyColumn} ref={sceneStickyRef}>
         <div className={styles.stickyCard}>
           {/* Header */}
@@ -1038,6 +906,7 @@ export default function ReportInsights({
           </div>
         </div>
       </aside>
+      </details>
 
     </div>
   );

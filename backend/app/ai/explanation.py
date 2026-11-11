@@ -2,22 +2,23 @@ from app.schemas.analysis import AnalysisResult, AnalyzedParameter
 
 _LANG_TRANSLATIONS = {
 	"en": {
-		"empty": "No water quality measurements were provided to analyze.",
-		"all_good": "Everything in this water test looks clean, balanced, and safe for everyday drinking and cooking! All tested parameters sit comfortably within national and international drinking guidelines.",
-		"caution": "This water is mostly usable, but a few parameters are approaching or slightly exceeding recommended aesthetic limits.",
-		"danger": "Attention needed! One or more parameters in this report are outside recommended drinking safety limits.",
-		"advice_prefix": "Recommended actions:",
-		"untranslated_advice": "See the report for recommended actions.",
-		"disclaimer": "Informational health screening based on recognized standards; always consult a certified local laboratory for legal or clinical water assessments.",
+		"empty": "No water test results were found.",
+		"unavailable": "No numeric results were found. Try a clearer report or enter the values yourself.",
+		"all_good": "The results shown are within the suggested ranges. This check covers only the results shown; it does not test for everything that can affect drinking water.",
+		"caution": "Some results need a closer look. Check the notes below before deciding what to do.",
+		"danger": "Some results are outside the suggested ranges. Have the water checked before drinking it.",
+		"advice_prefix": "What to do:",
+		"untranslated_advice": "Ask a local water-testing lab what to do about results outside the suggested range.",
+		"disclaimer": "This is a basic guide, not a full water safety test.",
 		"param_explain": {
-			"pH": "pH is {status}: acidic water can leach pipe metals, while alkaline water causes scaling.",
-			"TDS": "Total Dissolved Solids is {status}: indicates the amount of mineral salts dissolved.",
-			"Turbidity": "Turbidity is {status}: measures water cloudiness and suspended particulate matter.",
-			"Total Hardness": "Hardness is {status}: high levels leave mineral scale on appliances and pipes.",
-			"Chloride": "Chloride is {status}: elevated levels impart a salty taste and increase corrosion.",
-			"Fluoride": "Fluoride is {status}: essential for dental health in small doses, but harmful in excess.",
-			"Nitrate": "Nitrate is {status}: fertilizer runoff that can be dangerous for infants and expectant mothers.",
-			"Iron": "Iron is {status}: causes reddish-brown water discoloration and metallic taste.",
+			"pH": "The water's acid balance is {status}.",
+			"TDS": "The amount of salts and minerals in the water is {status}.",
+			"Turbidity": "The water's cloudiness is {status}.",
+			"Total Hardness": "The minerals that can leave marks on taps and dishes are {status}.",
+			"Chloride": "The amount of salt in the water is {status}.",
+			"Fluoride": "The amount of fluoride in the water is {status}.",
+			"Nitrate": "The amount of nitrate in the water is {status}. High amounts can harm babies.",
+			"Iron": "The amount of iron in the water is {status}. Too much can cause rusty stains or taste.",
 		},
 	},
 	"es": {
@@ -106,8 +107,12 @@ def explain_analysis(analysis: AnalysisResult, lang: str = "en") -> str:
 	if not analysis.parameters:
 		return t["empty"]
 
-	outside = [p for p in analysis.parameters if p.status == "outside_range"]
-	attention = [p for p in analysis.parameters if p.status == "attention"]
+	measured_parameters = [p for p in analysis.parameters if p.status != "unavailable"]
+	if not measured_parameters:
+		return t.get("unavailable", t["empty"])
+
+	outside = [p for p in measured_parameters if p.status == "outside_range"]
+	attention = [p for p in measured_parameters if p.status == "attention"]
 
 	paragraphs: list[str] = []
 
@@ -122,10 +127,17 @@ def explain_analysis(analysis: AnalysisResult, lang: str = "en") -> str:
 
 	# Build friendly human narrative
 	findings: list[str] = []
-	for p in analysis.parameters:
+	for p in measured_parameters:
 		if p.status in {"outside_range", "attention"}:
 			template = t["param_explain"].get(p.parameter)
-			status_word = "elevated / out of range" if p.status == "outside_range" else "borderline"
+			if p.status == "attention":
+				status_word = "close to the suggested range"
+			elif p.value is not None and p.reference_maximum is not None and p.value > p.reference_maximum:
+				status_word = "above the suggested range"
+			elif p.value is not None and p.reference_minimum is not None and p.value < p.reference_minimum:
+				status_word = "below the suggested range"
+			else:
+				status_word = "outside the suggested range"
 			if language == "es":
 				status_word = "fuera de rango" if p.status == "outside_range" else "en observación"
 			elif language == "hi":
@@ -136,14 +148,18 @@ def explain_analysis(analysis: AnalysisResult, lang: str = "en") -> str:
 				status_word = "hors limites" if p.status == "outside_range" else "à surveiller"
 
 			if template:
-				findings.append(template.format(status=status_word))
+				finding = template.format(status=status_word)
+				if p.value is not None:
+					unit = f" {p.unit}" if p.unit else ""
+					finding = f"{finding} The result was {p.value:g}{unit}."
+				findings.append(finding)
 
 	if findings:
 		paragraphs.append(" ".join(findings))
 
 	if analysis.recommendations:
 		if language == "en":
-			actions = "; ".join(analysis.recommendations[:3])
+			actions = t["untranslated_advice"]
 		else:
 			actions = t["untranslated_advice"]
 		paragraphs.append(f"{t['advice_prefix']} {actions}")

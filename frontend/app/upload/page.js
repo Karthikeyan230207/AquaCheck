@@ -22,9 +22,17 @@ export default function UploadPage() {
   const [error, setError] = useState("");
   const [savedReportId, setSavedReportId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   function selectFile(selectedFile) {
     if (!selectedFile) return;
+    if (!/\.(pdf|jpe?g|png)$/i.test(selectedFile.name)) {
+      setFile(null);
+      setResult(null);
+      setSavedReportId("");
+      setError("Choose a PDF, JPG, JPEG, or PNG water report.");
+      return;
+    }
     setFile(selectedFile);
     setError("");
     setSavedReportId("");
@@ -49,11 +57,18 @@ export default function UploadPage() {
       const headers = accessToken
         ? { Authorization: `Bearer ${accessToken}` }
         : undefined;
-      const response = await fetch(`${API_BASE_URL}/api/reports/analyze`, {
-        method: "POST",
-        headers,
-        body: formData,
-      });
+      let response;
+      try {
+        response = await fetch(`${API_BASE_URL}/api/reports/analyze`, {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+      } catch {
+        throw new Error(
+          `Could not connect to the analysis service at ${API_BASE_URL}. Check that the backend is running and try again.`,
+        );
+      }
       const responseText = await response.text();
       let payload;
 
@@ -68,7 +83,10 @@ export default function UploadPage() {
       }
 
       if (!response.ok) {
-        throw new Error(payload.detail || `The API request failed (${response.status}).`);
+        const detail = Array.isArray(payload.detail)
+          ? payload.detail.map((issue) => issue.msg).join("; ")
+          : payload.detail;
+        throw new Error(detail || `The API request failed (${response.status}).`);
       }
       setResult(payload);
       if (payload.saved_to_history) {
@@ -127,10 +145,12 @@ export default function UploadPage() {
             className={styles.fileInput}
             disabled={isSubmitting}
             id="report-file"
-            onChange={(event) => selectFile(event.target.files?.[0])}
+            onChange={(event) => {
+              selectFile(event.target.files?.[0]);
+              event.target.value = "";
+            }}
             type="file"
           />
-          {file && <p className={styles.selectedFile} title={file.name}>{file.name}</p>}
           <button
             className={styles.submitButton}
             disabled={isSubmitting || authLoading}

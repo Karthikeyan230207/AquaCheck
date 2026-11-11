@@ -51,6 +51,13 @@
   color: #eefbff;
 }
 
+.fileLabelDragging {
+  outline: 2px solid rgba(126, 232, 255, 0.72);
+  outline-offset: 5px;
+  background: rgba(56, 189, 248, 0.08);
+  border-radius: 12px;
+}
+
 .fileLabel > span:last-child {
   display: grid;
   min-width: 0;
@@ -131,6 +138,30 @@
   background: rgba(255, 116, 107, 0.08);
   color: #ffd8d3;
   line-height: 1.5;
+}
+
+.processing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  color: rgba(196, 220, 232, 0.9);
+  font-size: 0.9rem;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(143, 231, 255, 0.28);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: uploadSpin 0.75s linear infinite;
+}
+
+@keyframes uploadSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .saveNotice {

@@ -3,10 +3,9 @@
    ============================================================ */
 
 .reportSplitLayout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
-  gap: 20px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   width: 100%;
   margin-top: 4px;
 }
@@ -22,11 +21,53 @@
    Sticky Right Column: 3D Water Glass & Particulate Inspector
    ============================================================ */
 .stickyColumn {
-  position: sticky;
-  top: 88px;
-  z-index: 10;
+  position: static;
   display: flex;
   flex-direction: column;
+}
+
+.visualizationDetails {
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.visualizationSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  color: var(--text-strong);
+  cursor: pointer;
+  font-size: 0.94rem;
+  font-weight: 750;
+  list-style: none;
+}
+
+.visualizationSummary:focus-visible,
+.paramSummary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.visualizationSummary::-webkit-details-marker {
+  display: none;
+}
+
+.visualizationSummary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.visualizationDetails[open] > .visualizationSummary > svg {
+  transform: rotate(180deg);
+}
+
+.visualizationDetails > .stickyColumn {
+  padding: 0 16px 16px;
 }
 
 .stickyCard {
@@ -252,6 +293,7 @@
   padding: 20px 22px;
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
+  background: var(--surface);
   backdrop-filter: blur(16px);
   box-shadow: var(--shadow-md);
 }
@@ -283,6 +325,7 @@
   border-radius: var(--r-lg);
   background: rgba(4, 18, 28, 0.6);
   border: 1px solid currentColor;
+  color: var(--muted);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
@@ -298,7 +341,9 @@
   display: inline-block;
   padding: 4px 10px;
   border-radius: var(--r-full);
-  color: #020c16;
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid var(--border-strong);
+  color: var(--text-strong);
   font-size: 0.68rem;
   font-weight: 850;
   letter-spacing: 0.05em;
@@ -410,6 +455,7 @@
 .kpiBarFill {
   height: 100%;
   border-radius: var(--r-full);
+  background: var(--muted-2);
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -476,24 +522,12 @@
   border-color: var(--border-strong);
 }
 
-.actionItem_critical {
-  border-left: 3px solid var(--danger);
-}
-
-.actionItem_high {
-  border-left: 3px solid #fb923c;
-}
-
-.actionItem_medium {
-  border-left: 3px solid var(--warning);
-}
-
-.actionItem_low {
-  border-left: 3px solid var(--primary);
-}
-
+.actionItem_critical,
+.actionItem_high,
+.actionItem_medium,
+.actionItem_low,
 .actionItem_routine {
-  border-left: 3px solid var(--success);
+  border-left: 3px solid var(--border-strong);
 }
 
 .actionIcon {
@@ -530,29 +564,18 @@
   letter-spacing: 0.04em;
 }
 
-.critical {
-  background: var(--danger-bg);
-  color: var(--danger);
-}
-
-.high {
-  background: rgba(251, 146, 60, 0.14);
-  color: #fdba74;
-}
-
-.medium {
-  background: var(--warning-bg);
-  color: var(--warning);
-}
-
-.low {
-  background: rgba(56, 189, 248, 0.12);
-  color: var(--primary);
-}
-
+.critical,
+.high,
+.medium,
+.low,
 .routine {
-  background: var(--success-bg);
-  color: var(--success);
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text);
+}
+
+.review {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--muted);
 }
 
 .actionCategory {
@@ -570,7 +593,7 @@
 }
 
 /* ============================================================
-   Measurement Diagnostics & Parameter Cards
+   Plain-Language Parameter Cards
    ============================================================ */
 .diagnosticsSection {
   display: flex;
@@ -600,200 +623,154 @@
 
 .friendlyGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
 }
 
 .paramCard {
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
+  min-width: 0;
   border-radius: var(--r-xl);
   border: 1px solid var(--border);
+  border-top: 3px solid var(--border-strong);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 14px 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .paramCard:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
   border-color: var(--border-strong);
 }
 
-.paramCardGood {
-  border-top: 2px solid var(--success);
-}
-
-.paramCardWarn {
-  border-top: 2px solid var(--warning);
-}
-
-.paramCardBad {
-  border-top: 2px solid var(--danger);
-}
-
 .paramCardActive {
-  border-color: var(--primary) !important;
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.4), var(--shadow-md) !important;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), var(--shadow-md);
 }
 
-.paramCardTop {
+/* ---- Parameter Header (always visible) ---- */
+.paramHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .paramHeaderTitle {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
+  flex: 1;
 }
 
 .paramIcon {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   flex-shrink: 0;
-  border-radius: var(--r-md);
-  background: rgba(56, 189, 248, 0.1);
+  border-radius: var(--r-lg);
+  background: rgba(56, 189, 248, 0.08);
+  border: 1.5px solid var(--border-strong);
   color: var(--primary);
+  transition: border-color 0.2s ease;
 }
 
-.categoryBadge {
+.paramTechnicalName {
   display: block;
   color: var(--muted-2);
-  font-size: 0.66rem;
-  font-weight: 750;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: 2px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 2px;
+  letter-spacing: 0.04em;
 }
 
 .paramName {
   margin: 0;
   color: var(--text-strong);
-  font-size: 0.98rem;
+  font-size: 1rem;
   font-weight: 750;
   letter-spacing: -0.015em;
+  line-height: 1.3;
 }
 
-.statusChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
-  border-radius: var(--r-full);
-  font-size: 0.68rem;
-  font-weight: 750;
-  white-space: nowrap;
-}
-
-.chipGreen {
-  background: var(--success-bg);
-  color: var(--success);
-}
-
-.chipYellow {
-  background: var(--warning-bg);
-  color: var(--warning);
-}
-
-.chipRed {
-  background: var(--danger-bg);
-  color: var(--danger);
-}
-
-.paramDescription {
-  margin: 0 0 12px;
-  color: var(--muted);
-  font-size: 0.83rem;
-  line-height: 1.5;
-  flex: 1;
-}
-
-/* Benchmark Range Meter */
-.meterContainer {
-  margin-bottom: 12px;
-  padding: 8px 10px;
+/* ---- Big Value Display ---- */
+.paramValueBlock {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 12px;
+  margin-bottom: 9px;
   border-radius: var(--r-md);
   background: rgba(5, 18, 30, 0.6);
   border: 1px solid rgba(148, 163, 184, 0.06);
 }
 
-.meterLabels {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.7rem;
+.paramValueLabel {
   color: var(--muted-2);
-  margin-bottom: 6px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 4px;
 }
 
-.meterReadingText strong {
-  color: var(--text-strong);
+.paramValueBig {
+  font-size: 1.3rem;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
-.meterTrack {
-  position: relative;
-  width: 100%;
-  height: 6px;
+.paramValueUnit {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.08);
-  overflow: visible;
+  font-size: 0.74rem;
+  font-weight: 750;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.meterSafeZone {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  border-radius: var(--r-full);
-  background: rgba(16, 185, 129, 0.28);
-  border: 1px solid rgba(16, 185, 129, 0.45);
+.chipNeutral {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--muted);
+  border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
-.meterMarker {
-  position: absolute;
-  top: 50%;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  border: 2px solid #ffffff;
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
-  z-index: 2;
-  transition: left 0.3s ease;
+.paramDescription {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 /* Advice Box */
 .adviceBox {
-  padding: 9px 11px;
+  padding: 10px 14px;
   border-radius: var(--r-md);
-  font-size: 0.78rem;
-  line-height: 1.45;
+  font-size: 0.82rem;
+  line-height: 1.5;
   margin-bottom: 12px;
-}
-
-.adviceBoxGood {
-  background: rgba(16, 185, 129, 0.08);
-  border-left: 3px solid var(--success);
-  color: var(--text);
-}
-
-.adviceBoxWarn {
-  background: rgba(245, 158, 11, 0.08);
-  border-left: 3px solid var(--warning);
-  color: var(--text);
-}
-
-.adviceBoxBad {
-  background: rgba(244, 63, 94, 0.08);
-  border-left: 3px solid var(--danger);
+  background: rgba(148, 163, 184, 0.08);
+  border-left: 3px solid var(--border-strong);
   color: var(--text);
 }
 
@@ -936,30 +913,22 @@
   text-transform: capitalize;
 }
 
-.within_range {
-  background: var(--success-bg);
-  color: var(--success);
-}
-
-.attention {
-  background: var(--warning-bg);
-  color: var(--warning);
-}
-
+.within_range,
+.attention,
 .outside_range {
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
 }
 
 /* ============================================================
    AI Water Quality Executive Summary
    ============================================================ */
 .explanation {
-  padding: 22px 24px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  padding: 20px 22px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: var(--r-lg);
+  background: rgba(8, 24, 36, 0.56);
 }
 
 .aiStoryHeader {
@@ -995,21 +964,52 @@
 }
 
 .explanationText p {
-  margin: 10px 0;
-  color: var(--text);
-  font-size: 0.9rem;
-  line-height: 1.65;
-  background: rgba(56, 189, 248, 0.06);
-  padding: 14px 18px;
-  border-radius: var(--r-md);
-  border-left: 3px solid var(--primary);
+  margin: 8px 0;
+  padding: 2px 0 2px 13px;
+  border-left: 2px solid rgba(148, 163, 184, 0.42);
+  color: rgba(225, 235, 241, 0.92);
+  font-size: 0.91rem;
+  line-height: 1.7;
 }
 
-.retryRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 14px;
+.explanation .pillTag {
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.explanation .langIcon {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--muted);
+}
+
+.explanation .btnChip {
+  background: rgba(148, 163, 184, 0.06);
+  border-color: rgba(148, 163, 184, 0.2);
+  color: var(--muted);
+}
+
+.explanation .btnChip:hover {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-strong);
+}
+
+.explanation .btnChipActive,
+.explanation .btnChipActive:hover {
+  background: rgba(148, 163, 184, 0.17);
+  border-color: rgba(148, 163, 184, 0.34);
+  color: var(--text-strong);
+  box-shadow: none;
+}
+
+.explanation .btnSecondary {
+  background: rgba(148, 163, 184, 0.07);
+  border-color: rgba(148, 163, 184, 0.22);
+  color: var(--text-strong);
+}
+
+.explanation .btnSecondary:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.13);
+  border-color: rgba(148, 163, 184, 0.36);
 }
 
 .loadingRow {
@@ -1170,17 +1170,24 @@
 
 /* Responsive Breakpoints */
 @media (max-width: 980px) {
-  .reportSplitLayout {
-    grid-template-columns: 1fr;
-  }
   .stickyColumn {
     position: static;
   }
 }
 
 @media (max-width: 640px) {
-  .reportSplitLayout {
-    gap: 14px;
+  .friendlyGrid {
+    grid-template-columns: 1fr;
+  }
+  .paramHeader {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .paramValueBig {
+    font-size: 1.3rem;
+  }
+  .paramCard {
+    padding: 14px;
   }
   .stickyCard {
     padding: 14px;
@@ -1200,5 +1207,165 @@
   }
   .executiveActions button {
     width: 100%;
+  }
+}
+
+@media print {
+  .reportSplitLayout,
+  .scrollableContent {
+    display: block;
+    width: 100%;
+    margin: 0;
+  }
+
+  .scrollableContent > section {
+    margin-bottom: 12pt;
+    break-inside: auto;
+  }
+
+  .executiveCard,
+  .actionPlanCard,
+  .paramCard {
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: none;
+    color: #111827;
+    backdrop-filter: none;
+  }
+
+  .executiveCard,
+  .paramCard,
+  .actionItem {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .executiveCard,
+  .actionPlanCard {
+    padding: 10pt;
+  }
+
+  .executiveHeader {
+    padding-bottom: 8pt;
+  }
+
+  .executiveIdentity {
+    min-width: 0;
+  }
+
+  .executiveIconWrap,
+  .executiveActions,
+  .kpiBarTrack,
+  .btnChipSm,
+  .technicalAccordion,
+  .visualizationDetails,
+  .explanation,
+  .paramIcon {
+    display: none !important;
+  }
+
+  .executiveKpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6pt;
+    padding-top: 8pt;
+  }
+
+  .kpiItem {
+    padding: 6pt 8pt;
+    border: 1px solid #d1d5db;
+    border-radius: 3px;
+    background: #fff;
+  }
+
+  .friendlyGrid,
+  .actionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7pt;
+  }
+
+  .paramCard {
+    padding: 8pt;
+  }
+
+  .paramHeader {
+    margin-bottom: 5pt;
+  }
+
+  .paramDescription {
+    margin-bottom: 5pt;
+    color: #374151;
+    font-size: 9pt;
+    line-height: 1.35;
+  }
+
+  .statusChip {
+    padding: 3pt 6pt;
+    border: 1px solid #9ca3af;
+    background: #f3f4f6;
+    color: #374151;
+    font-size: 8pt;
+  }
+
+  .paramValueBig {
+    font-size: 13pt;
+  }
+
+  .paramValueBlock {
+    margin-bottom: 5pt;
+    padding: 5pt 7pt;
+    border: 1px solid #e5e7eb;
+    border-radius: 3px;
+    background: #f3f4f6;
+  }
+
+  .actionItem {
+    padding: 7pt;
+    border: 1px solid #d1d5db;
+    border-radius: 3px;
+    background: #fff;
+  }
+
+  .actionIcon {
+    display: none;
+  }
+
+  .verdictTitle,
+  .paramName,
+  .paramValueBig,
+  .kpiValue,
+  .actionPlanTitle,
+  .friendlyTitle {
+    color: #111827;
+  }
+
+  .verdictSub,
+  .scopeMeta,
+  .kpiLabel,
+  .kpiSub,
+  .kpiText,
+  .scoreContext,
+  .actionDesc,
+  .actionCategory,
+  .paramTechnicalName,
+  .paramValueLabel,
+  .paramValueUnit,
+  .paramDescription,
+  .friendlySubtitle {
+    color: #374151;
+  }
+
+  .trafficBadge,
+  .priorityBadge {
+    border: 1px solid #9ca3af;
+    background: #f3f4f6;
+    color: #111827;
+  }
+
+  .adviceBox {
+    border: 1px solid #d1d5db;
+    border-left: 2px solid #6b7280;
+    background: #f9fafb;
+    color: #111827;
   }
 }

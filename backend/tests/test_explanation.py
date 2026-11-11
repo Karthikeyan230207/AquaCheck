@@ -24,14 +24,15 @@ def _analysis() -> AnalysisResult:
 	)
 
 
-def test_explanation_describes_reference_status_and_limits() -> None:
+def test_explanation_uses_plain_language_and_does_not_repeat_lab_recommendations() -> None:
 	analysis = _analysis()
-	analysis.parameters[0].unit = "mg/L"
 
 	res = explain_analysis(analysis, lang="en")
-	assert "Attention needed!" in res
-	assert "pH is elevated / out of range" in res
-	assert "Retest the sample." in res
+	assert "Some results are outside the suggested ranges." in res
+	assert "The water's acid balance is above the suggested range. The result was 9." in res
+	assert "Ask a local water-testing lab what to do" in res
+	assert "Retest the sample." not in res
+	assert "Total Dissolved Solids" not in res
 
 
 def test_explanation_multilingual_support() -> None:
@@ -88,7 +89,7 @@ def test_explanation_all_good_scenario() -> None:
 	)
 
 	res = explain_analysis(analysis, lang="en")
-	assert "Everything in this water test looks clean" in res
+	assert "The results shown are within the suggested ranges." in res
 
 
 def test_explanation_handles_empty_measurements() -> None:
@@ -101,4 +102,15 @@ def test_explanation_handles_empty_measurements() -> None:
 		}
 	)
 
-	assert "No water quality measurements were provided" in explain_analysis(analysis)
+	assert "No water test results were found" in explain_analysis(analysis)
+
+
+def test_explanation_handles_measurements_without_numeric_values() -> None:
+	analysis = _analysis()
+	parameter = analysis.parameters[0]
+	parameter.value = None
+	parameter.status = "unavailable"
+	parameter.reference_minimum = None
+	parameter.reference_maximum = None
+
+	assert "No numeric results were found" in explain_analysis(analysis)
