@@ -9,10 +9,18 @@ import shutil
 import fitz
 
 from app.config.settings import settings
+from app.extraction.upload_validation import (
+	validate_image_dimensions,
+	validate_pdf_document,
+)
 
 
 class OCRUnavailableError(RuntimeError):
 	"""Raised when no OCR provider has been configured."""
+
+
+class OCRTimeoutError(TimeoutError):
+	"""Raised when OCR exceeds its configured execution time."""
 
 
 OCRProvider = Callable[[bytes], str]
@@ -55,6 +63,7 @@ def tesseract_ocr(image_data: bytes) -> str:
 
 	try:
 		with image_module.open(BytesIO(image_data)) as image:
+			validate_image_dimensions(*image.size)
 			try:
 				image.load()
 			except (image_module.UnidentifiedImageError, OSError) as error:
@@ -84,6 +93,7 @@ def tesseract_ocr(image_data: bytes) -> str:
 				ocr_image,
 				lang=settings.ocr_language,
 				config=config,
+				timeout=settings.ocr_timeout_seconds,
 			)
 			if re.search(r"(?<![A-Za-z])pH(?![A-Za-z])", text, re.IGNORECASE) is None:
 				label_column = ocr_image.crop(
@@ -98,6 +108,7 @@ def tesseract_ocr(image_data: bytes) -> str:
 					label_column,
 					lang=settings.ocr_language,
 					config=config,
+					timeout=settings.ocr_timeout_seconds,
 				)
 				if re.search(r"^\s*pH\s*$", label_text, re.IGNORECASE | re.MULTILINE):
 					text = f"pH\n{text}"
@@ -113,6 +124,10 @@ def tesseract_ocr(image_data: bytes) -> str:
 		raise OCRUnavailableError(
 			f"Tesseract OCR failed. Check OCR_LANGUAGE and installed language data: {error}"
 		) from error
+	except RuntimeError as error:
+		if "timeout" in str(error).lower():
+			raise OCRTimeoutError("Tesseract OCR exceeded its configured time limit.") from error
+		raise OCRUnavailableError(f"Tesseract OCR failed: {error}") from error
 
 
 def extract_text_from_image(image_data: bytes, provider: OCRProvider | None = None) -> str:
@@ -138,6 +153,7 @@ def extract_text_from_scanned_pdf(
 		raise ValueError("The uploaded data is not a readable PDF") from error
 
 	with document:
+		validate_pdf_document(document)
 		pages = [
 			extract_text_from_image(
 				page.get_pixmap(dpi=settings.ocr_dpi).tobytes("png"),

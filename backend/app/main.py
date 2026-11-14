@@ -5,6 +5,7 @@ from app.api.ai import router as ai_router
 from app.api.analysis import router as analysis_router
 from app.api.reports import router as reports_router
 from app.config.settings import settings
+from app.middleware.upload_limits import UploadLimitMiddleware
 
 
 app = FastAPI(
@@ -12,6 +13,7 @@ app = FastAPI(
 	description="Water quality report extraction and deterministic analysis API.",
 	version="0.1.0",
 )
+app.add_middleware(UploadLimitMiddleware)
 app.add_middleware(
 	CORSMiddleware,
 	allow_origins=[

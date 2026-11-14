@@ -250,6 +250,40 @@ def test_tesseract_ocr_recovers_pH_label_from_left_column(monkeypatch) -> None:
 	assert parse_parameters(text)[0] == {"parameter": "pH", "value": 7.5, "unit": ""}
 
 
+def test_tesseract_ocr_raises_timeout_error(monkeypatch) -> None:
+	image_buffer = BytesIO()
+	Image.new("RGB", (20, 20), "white").save(image_buffer, format="PNG")
+
+	class TesseractNotFoundError(Exception):
+		pass
+
+	class TesseractError(Exception):
+		pass
+
+	def timeout(*_args, **_kwargs):
+		raise RuntimeError("Tesseract process timeout")
+
+	pytesseract = SimpleNamespace(
+		pytesseract=SimpleNamespace(
+			tesseract_cmd="",
+			TesseractNotFoundError=TesseractNotFoundError,
+			TesseractError=TesseractError,
+		),
+		image_to_string=timeout,
+	)
+	original_import_module = ocr_engine.import_module
+
+	def import_with_timeout(name: str, package: str | None = None):
+		if name == "pytesseract":
+			return pytesseract
+		return original_import_module(name, package)
+
+	monkeypatch.setattr(ocr_engine, "import_module", import_with_timeout)
+
+	with pytest.raises(ocr_engine.OCRTimeoutError):
+		ocr_engine.tesseract_ocr(image_buffer.getvalue())
+
+
 def test_pdf_extraction_uses_ocr_for_pages_without_embedded_text() -> None:
 	document = fitz.open()
 	document.new_page()

@@ -10,6 +10,35 @@ import styles from "./upload.module.css";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+async function requestJson(url, options, connectionError) {
+  let response;
+  try {
+    response = await fetch(url, options);
+  } catch {
+    throw new Error(connectionError);
+  }
+
+  const responseText = await response.text();
+  let payload;
+  try {
+    payload = JSON.parse(responseText);
+  } catch {
+    throw new Error(
+      response.ok
+        ? "The API returned an unreadable response."
+        : `The API request failed (${response.status}).`,
+    );
+  }
+
+  if (!response.ok) {
+    const detail = Array.isArray(payload.detail)
+      ? payload.detail.map((issue) => issue.msg).join("; ")
+      : payload.detail;
+    throw new Error(detail || `The API request failed (${response.status}).`);
+  }
+  return payload;
+}
+
 export default function UploadPage() {
   const {
     user,
@@ -23,6 +52,7 @@ export default function UploadPage() {
   const [savedReportId, setSavedReportId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState("");
 
   function selectFile(selectedFile) {
     if (!selectedFile) return;
@@ -50,6 +80,7 @@ export default function UploadPage() {
     setSavedReportId("");
     setResult(null);
     setIsSubmitting(true);
+    setProcessingMessage("Uploading your report…");
 
     try {
       const formData = new FormData();
@@ -57,40 +88,52 @@ export default function UploadPage() {
       const headers = accessToken
         ? { Authorization: `Bearer ${accessToken}` }
         : undefined;
-      let response;
-      try {
-        response = await fetch(`${API_BASE_URL}/api/reports/analyze`, {
+      const job = await requestJson(
+        `${API_BASE_URL}/api/reports/analyze`,
+        {
           method: "POST",
           headers,
           body: formData,
-        });
-      } catch {
-        throw new Error(
-          `Could not connect to the analysis service at ${API_BASE_URL}. Check that the backend is running and try again.`,
-        );
-      }
-      const responseText = await response.text();
-      let payload;
+        },
+        `Could not connect to the analysis service at ${API_BASE_URL}. Check that the backend is running and try again.`,
+      );
 
-      try {
-        payload = JSON.parse(responseText);
-      } catch {
-        throw new Error(
-          response.ok
-            ? "The API returned an unreadable response."
-            : `The API request failed (${response.status}).`,
-        );
+      if (!job.job_id) {
+        throw new Error("The analysis service did not return a job ID.");
       }
 
-      if (!response.ok) {
-        const detail = Array.isArray(payload.detail)
-          ? payload.detail.map((issue) => issue.msg).join("; ")
-          : payload.detail;
-        throw new Error(detail || `The API request failed (${response.status}).`);
+      let completedJob;
+      while (!completedJob) {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        const status = await requestJson(
+          `${API_BASE_URL}/api/reports/jobs/${encodeURIComponent(job.job_id)}`,
+          { headers },
+          "The connection to the analysis service was interrupted while waiting for the result.",
+        );
+
+        if (status.status === "failed") {
+          throw new Error(status.error || "The report could not be analyzed.");
+        }
+        if (status.status === "completed") {
+          completedJob = status.result;
+          if (!completedJob) {
+            throw new Error("The analysis job completed without returning a result.");
+          }
+          break;
+        }
+        if (status.status !== "queued" && status.status !== "processing") {
+          throw new Error("The analysis service returned an unknown job status.");
+        }
+        setProcessingMessage(
+          status.status === "queued"
+            ? "Your report is queued for analysis…"
+            : "Reading your report. Scanned pages can take a little longer.",
+        );
       }
-      setResult(payload);
-      if (payload.saved_to_history) {
-        setSavedReportId(payload.report_id);
+
+      setResult(completedJob);
+      if (completedJob.saved_to_history) {
+        setSavedReportId(completedJob.report_id);
       }
     } catch (requestError) {
       setError(
@@ -100,6 +143,7 @@ export default function UploadPage() {
       );
     } finally {
       setIsSubmitting(false);
+      setProcessingMessage("");
     }
   }
 
@@ -163,7 +207,7 @@ export default function UploadPage() {
         {isSubmitting && (
           <p className={styles.processing} role="status" aria-live="polite">
             <span className={styles.spinner} aria-hidden="true" />
-            Reading your report. Scanned pages can take a little longer.
+            {processingMessage}
           </p>
         )}
 

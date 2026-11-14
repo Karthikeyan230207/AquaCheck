@@ -7,6 +7,7 @@ import { useAuth } from "../../hooks/useAuth";
 import styles from "./history.module.css";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const PAGE_SIZE = 10;
 
 function HistoryLoading({ label }) {
   return (
@@ -45,15 +46,18 @@ export default function HistoryContent() {
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [actionMessage, setActionMessage] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageInfo, setPageInfo] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const requestKey = user && accessToken ? user.id : "";
+  const requestKey = user && accessToken ? `${user.id}:${page}` : "";
   const loadingReports = Boolean(requestKey && loadedRequest !== requestKey);
 
   useEffect(() => {
     if (authLoading || !requestKey || !accessToken) return undefined;
 
     const controller = new AbortController();
-    fetch(`${API_BASE_URL}/api/reports?limit=50`, {
+    fetch(`${API_BASE_URL}/api/reports?page=${page}&page_size=${PAGE_SIZE}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       signal: controller.signal,
     })
@@ -67,11 +71,14 @@ export default function HistoryContent() {
       .then((payload) => {
         if (controller.signal.aborted) return;
         setReports(payload.reports ?? []);
+        setPageInfo(payload);
         setError("");
         setLoadedRequest(requestKey);
       })
       .catch((queryError) => {
         if (controller.signal.aborted) return;
+        setReports([]);
+        setPageInfo(null);
         setError(
           queryError instanceof Error
             ? queryError.message
@@ -81,7 +88,7 @@ export default function HistoryContent() {
       });
 
     return () => controller.abort();
-  }, [accessToken, authLoading, requestKey]);
+  }, [accessToken, authLoading, page, refreshKey, requestKey]);
 
   async function handleDelete(reportId) {
     if (!accessToken) return;
@@ -103,8 +110,22 @@ export default function HistoryContent() {
       }
 
       setReports((previous) => previous.filter((report) => report.report_id !== reportId));
+      setPageInfo((previous) => {
+        if (!previous) return previous;
+        const total = Math.max(0, previous.total - 1);
+        return {
+          ...previous,
+          total,
+          total_pages: Math.ceil(total / previous.page_size),
+        };
+      });
       setActionMessage("Report removed from your history.");
       setTimeout(() => setActionMessage(""), 3500);
+      if (reports.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        setRefreshKey((previous) => previous + 1);
+      }
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Could not delete this report.");
     } finally {
@@ -172,7 +193,7 @@ export default function HistoryContent() {
           <div className={styles.historyHeaderRow}>
             <span className={styles.reportsCountBadge}>
               <FileText size={14} />
-              <span>{reports.length} Archived {reports.length === 1 ? "Report" : "Reports"}</span>
+              <span>{pageInfo?.total ?? reports.length} Archived {(pageInfo?.total ?? reports.length) === 1 ? "Report" : "Reports"}</span>
             </span>
             <Link href="/upload" className={styles.btnSecondarySmall}>
               <Plus size={15} />
@@ -263,6 +284,29 @@ export default function HistoryContent() {
               );
             })}
           </ul>
+          {pageInfo && pageInfo.total_pages > 1 && (
+            <nav className={styles.pagination} aria-label="Report history pages">
+              <button
+                className={styles.paginationButton}
+                disabled={!pageInfo.has_previous}
+                onClick={() => setPage((previous) => previous - 1)}
+                type="button"
+              >
+                Previous
+              </button>
+              <span className={styles.paginationStatus}>
+                Page {pageInfo.page} of {pageInfo.total_pages}
+              </span>
+              <button
+                className={styles.paginationButton}
+                disabled={!pageInfo.has_next}
+                onClick={() => setPage((previous) => previous + 1)}
+                type="button"
+              >
+                Next
+              </button>
+            </nav>
+          )}
         </>
       )}
 

@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from fastapi.concurrency import run_in_threadpool
 from pymongo import DESCENDING
 from pymongo.errors import PyMongoError
 
@@ -11,20 +10,34 @@ from app.analysis.analyzer import analyze_parameters
 from app.api.auth import AuthenticatedUser, get_current_user, get_optional_user
 from app.config.settings import settings
 from app.extraction.ocr_engine import (
+	OCRTimeoutError,
 	OCRUnavailableError,
-	extract_text_from_image,
-	tesseract_ocr,
 )
 from app.extraction.parameter_parser import parse_parameters
-from app.extraction.pdf_extractor import extract_pdf_text
+from app.extraction.upload_validation import (
+	UploadLimitExceededError,
+	validate_image_bytes,
+	validate_pdf_bytes,
+)
 from app.schemas.parameter import WaterParameter
 from app.schemas.report import (
 	ReportAnalysisResponse,
+	ReportAnalysisJobResponse,
 	ReportHistoryItem,
 	ReportHistoryResponse,
 	ReportUploadResponse,
 )
 from app.services.mongodb_service import get_reports_collection
+from app.services.extraction_worker import (
+	extract_image_in_process,
+	extract_pdf_in_process,
+)
+from app.services.report_job_service import (
+	AnalysisJobCapacityError,
+	AnalysisJobError,
+	get_analysis_job,
+	submit_analysis_job,
+)
 
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
@@ -64,11 +77,17 @@ def _save_report(document: dict[str, object]) -> None:
 	collection.insert_one(document)
 
 
-def _list_reports(user_id: str, limit: int) -> list[dict[str, object]]:
+def _list_reports(
+	user_id: str,
+	page: int,
+	page_size: int,
+) -> tuple[list[dict[str, object]], int]:
 	collection = get_reports_collection()
+	filter_document = {"user_id": user_id}
+	total = collection.count_documents(filter_document)
 	cursor = (
 		collection.find(
-			{"user_id": user_id},
+			filter_document,
 			{
 				"_id": 1,
 				"filename": 1,
@@ -77,10 +96,11 @@ def _list_reports(user_id: str, limit: int) -> list[dict[str, object]]:
 				"analysis": 1,
 			},
 		)
-		.sort("created_at", DESCENDING)
-		.limit(limit)
+		.sort([("created_at", DESCENDING), ("_id", DESCENDING)])
+		.skip((page - 1) * page_size)
+		.limit(page_size)
 	)
-	return list(cursor)
+	return list(cursor), total
 
 
 def _find_report(report_id: str, user_id: str) -> dict[str, object] | None:
@@ -117,6 +137,15 @@ async def _read_upload(file: UploadFile) -> tuple[str, str, str, bytes]:
 		raise HTTPException(status_code=400, detail="Uploaded file is empty")
 	if not _has_expected_signature(extension, content):
 		raise HTTPException(status_code=400, detail="File contents do not match the declared file type")
+	try:
+		if extension == ".pdf":
+			validate_pdf_bytes(content)
+		else:
+			validate_image_bytes(content, extension)
+	except UploadLimitExceededError as error:
+		raise HTTPException(status_code=413, detail=str(error)) from error
+	except ValueError as error:
+		raise HTTPException(status_code=400, detail=str(error)) from error
 	return filename, extension, content_type, content
 
 
@@ -134,50 +163,90 @@ async def upload_report(file: UploadFile = File(...)) -> ReportUploadResponse:
 
 @router.post(
 	"/analyze",
-	response_model=ReportAnalysisResponse,
-	status_code=status.HTTP_200_OK,
+	response_model=ReportAnalysisJobResponse,
+	status_code=status.HTTP_202_ACCEPTED,
 )
 async def analyze_report(
 	file: UploadFile = File(...),
 	user: AuthenticatedUser | None = Depends(get_optional_user),
-) -> ReportAnalysisResponse:
+) -> ReportAnalysisJobResponse:
 	"""
-	Analyze a report and persist the result in Atlas when the caller is signed in.
+	Queue a report analysis and return a job ID to poll for its result.
 
 	The MongoDB connection string stays on the backend; the caller's Supabase
 	access token is validated with Supabase Auth before it is used as the owner.
 	"""
 	filename, extension, content_type, content = await _read_upload(file)
+	try:
+		job = submit_analysis_job(
+			user.user_id if user is not None else None,
+			_analyze_uploaded_report,
+			filename,
+			extension,
+			content_type,
+			content,
+			user.user_id if user is not None else None,
+		)
+	except AnalysisJobCapacityError as error:
+		raise HTTPException(
+			status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+			detail="Too many reports are being analyzed. Try again shortly.",
+			headers={"Retry-After": "1"},
+		) from error
+	except RuntimeError as error:
+		raise HTTPException(
+			status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+			detail="The report analysis worker is unavailable.",
+		) from error
 
+	return ReportAnalysisJobResponse(
+		job_id=job.job_id,
+		status=job.status,
+		result=job.result,
+		error=job.error,
+		error_code=job.error_code,
+	)
+
+
+def _analyze_uploaded_report(
+	filename: str,
+	extension: str,
+	content_type: str,
+	content: bytes,
+	user_id: str | None,
+) -> ReportAnalysisResponse:
 	try:
 		if extension == ".pdf":
-			extracted = await run_in_threadpool(extract_pdf_text, content)
+			extracted = extract_pdf_in_process(content)
 		else:
-			extracted_text = await run_in_threadpool(
-				extract_text_from_image,
-				content,
-				tesseract_ocr,
-			)
+			extracted_text = extract_image_in_process(content)
 			extracted = {"extracted_text": extracted_text, "page_count": 1}
 	except OCRUnavailableError as error:
-		raise HTTPException(status_code=503, detail=str(error)) from error
+		raise AnalysisJobError(status.HTTP_503_SERVICE_UNAVAILABLE, str(error)) from error
+	except OCRTimeoutError as error:
+		raise AnalysisJobError(
+			status.HTTP_504_GATEWAY_TIMEOUT,
+			"OCR processing exceeded the configured time limit.",
+		) from error
+	except UploadLimitExceededError as error:
+		raise AnalysisJobError(status.HTTP_413_CONTENT_TOO_LARGE, str(error)) from error
 	except ValueError as error:
-		raise HTTPException(status_code=422, detail=str(error)) from error
+		raise AnalysisJobError(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
 
 	parsed_parameters = parse_parameters(str(extracted["extracted_text"]))
 	if not parsed_parameters:
-		raise HTTPException(
-			status_code=422,
-			detail="No supported water-quality measurements were found in the report.",
+		raise AnalysisJobError(
+			status.HTTP_422_UNPROCESSABLE_CONTENT,
+			"No supported water-quality measurements were found in the report.",
 		)
 
 	parameters = [WaterParameter.model_validate(item) for item in parsed_parameters]
 	analysis = analyze_parameters(parameters)
 	report_id = str(uuid4())
-	if user is not None:
+	if user_id is not None:
 		document: dict[str, object] = {
 			"_id": report_id,
-			"user_id": user.user_id,
+			"user_id": user_id,
 			"filename": filename,
 			"content_type": content_type,
 			"size_bytes": len(content),
@@ -187,9 +256,16 @@ async def analyze_report(
 			"created_at": datetime.now(timezone.utc),
 		}
 		try:
-			await run_in_threadpool(_save_report, document)
+			_save_report(document)
 		except (PyMongoError, RuntimeError) as error:
-			raise _database_error(error) from error
+			logger.error(
+				"MongoDB Atlas report save failed (%s)",
+				type(error).__name__,
+			)
+			raise AnalysisJobError(
+				status.HTTP_503_SERVICE_UNAVAILABLE,
+				"Report storage is unavailable. Please try again later.",
+			) from error
 
 	return ReportAnalysisResponse(
 		report_id=report_id,
@@ -199,17 +275,37 @@ async def analyze_report(
 		page_count=int(extracted["page_count"]),
 		extracted_parameters=parameters,
 		analysis=analysis,
-		saved_to_history=user is not None,
+		saved_to_history=user_id is not None,
+	)
+
+
+@router.get("/jobs/{job_id}", response_model=ReportAnalysisJobResponse)
+def get_report_analysis_job(
+	job_id: str,
+	user: AuthenticatedUser | None = Depends(get_optional_user),
+) -> ReportAnalysisJobResponse:
+	job = get_analysis_job(job_id, user.user_id if user is not None else None)
+	if job is None:
+		raise HTTPException(status_code=404, detail="Analysis job not found")
+	return ReportAnalysisJobResponse(
+		job_id=job.job_id,
+		status=job.status,
+		result=job.result,
+		error=job.error,
+		error_code=job.error_code,
 	)
 
 
 @router.get("", response_model=ReportHistoryResponse)
 def list_reports(
 	user: AuthenticatedUser = Depends(get_current_user),
-	limit: int = Query(default=50, ge=1, le=100),
+	page: int = Query(default=1, ge=1, le=10_000),
+	page_size: int | None = Query(default=None, ge=1, le=100),
+	limit: int | None = Query(default=None, ge=1, le=100, deprecated=True),
 ) -> ReportHistoryResponse:
+	effective_page_size = page_size or limit or 20
 	try:
-		documents = _list_reports(user.user_id, limit)
+		documents, total = _list_reports(user.user_id, page, effective_page_size)
 	except (PyMongoError, RuntimeError) as error:
 		raise _database_error(error) from error
 
@@ -223,7 +319,16 @@ def list_reports(
 		)
 		for document in documents
 	]
-	return ReportHistoryResponse(reports=reports)
+	total_pages = (total + effective_page_size - 1) // effective_page_size
+	return ReportHistoryResponse(
+		reports=reports,
+		page=page,
+		page_size=effective_page_size,
+		total=total,
+		total_pages=total_pages,
+		has_next=page < total_pages,
+		has_previous=page > 1,
+	)
 
 
 @router.get("/{report_id}", response_model=ReportAnalysisResponse)

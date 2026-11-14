@@ -422,14 +422,15 @@ Charts + Status + Explanation
 
 ### Current MVP support
 
-`POST /api/reports/analyze` connects report upload, embedded text extraction or
-OCR, supported measurement parsing, validation, and deterministic analysis for
-PDFs and images. The frontend's `/upload` page displays the extracted measurements,
-classifications, score, recommendations, a report-driven 3D particle
-visualization, and an on-demand plain-language explanation. The visualization
-is an illustration based on reported values, not a literal view of the water.
-The explanation is generated immediately from the analysis rules when requested. The upload is
-processed in memory and is not saved. Scanned PDF pages and uploaded images
+`POST /api/reports/analyze` queues PDF/image extraction and OCR in spawned
+worker processes managed by the API; the frontend polls the returned job ID
+and displays the extracted measurements, classifications, score, recommendations, a
+report-driven 3D particle visualization, and an on-demand plain-language
+explanation. The visualization is an illustration based on reported values,
+not a literal view of the water.
+The explanation is generated from the analysis rules when requested. Job state
+is held in API-process memory and is lost on backend restart. The uploaded file is
+processed in memory and is not retained. Scanned PDF pages and uploaded images
 are processed with Tesseract OCR. Install the Tesseract executable on the
 backend host and configure `OCR_TESSERACT_CMD` if it is not on `PATH`. See
 [docs/api.md](docs/api.md) for setup and endpoint request/response details.

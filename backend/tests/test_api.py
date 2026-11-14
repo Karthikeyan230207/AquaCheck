@@ -1,16 +1,23 @@
+from collections.abc import Iterator
 from copy import deepcopy
 from datetime import datetime, timezone
+from io import BytesIO
+from threading import BoundedSemaphore
+import time
 from types import SimpleNamespace
-from collections.abc import Iterator
 
 import fitz
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from app.api import auth as auth_api
 from app.api import reports as reports_api
-from app.extraction.ocr_engine import OCRUnavailableError
+from app.config.settings import settings
+from app.extraction.ocr_engine import OCRTimeoutError, OCRUnavailableError
+from app.middleware import upload_limits
 from app.main import app
+from app.services import report_job_service
 
 
 client = TestClient(app)
@@ -20,8 +27,17 @@ class FakeCursor:
 	def __init__(self, documents: list[dict[str, object]]) -> None:
 		self.documents = documents
 
-	def sort(self, key: str, direction: int) -> "FakeCursor":
-		self.documents.sort(key=lambda document: document[key], reverse=direction < 0)
+	def sort(self, keys, direction: int | None = None) -> "FakeCursor":
+		sort_keys = keys if isinstance(keys, list) else [(keys, direction)]
+		for key, sort_direction in reversed(sort_keys):
+			self.documents.sort(
+				key=lambda document: document[key],
+				reverse=sort_direction < 0,
+			)
+		return self
+
+	def skip(self, count: int) -> "FakeCursor":
+		self.documents = self.documents[count:]
 		return self
 
 	def limit(self, count: int) -> "FakeCursor":
@@ -53,6 +69,12 @@ class FakeReportsCollection:
 		]
 		return FakeCursor(documents)
 
+	def count_documents(self, filter_document: dict[str, object]) -> int:
+		return sum(
+			document["user_id"] == filter_document["user_id"]
+			for document in self.documents.values()
+		)
+
 	def find_one(self, filter_document: dict[str, object], projection):
 		document = self.documents.get(str(filter_document["_id"]))
 		if document is None or document["user_id"] != filter_document["user_id"]:
@@ -73,6 +95,30 @@ def clear_auth_overrides():
 	app.dependency_overrides.clear()
 	yield
 	app.dependency_overrides.clear()
+
+
+def _submit_and_wait_for_analysis(files, headers=None) -> dict[str, object]:
+	response = client.post(
+		"/api/reports/analyze",
+		files=files,
+		headers=headers,
+	)
+	assert response.status_code == 202, response.text
+	job_id = response.json()["job_id"]
+	deadline = time.monotonic() + 5
+
+	while time.monotonic() < deadline:
+		poll_response = client.get(
+			f"/api/reports/jobs/{job_id}",
+			headers=headers,
+		)
+		assert poll_response.status_code == 200, poll_response.text
+		job = poll_response.json()
+		if job["status"] in {"completed", "failed"}:
+			return job
+		time.sleep(0.01)
+
+	raise AssertionError("Analysis job did not finish before the test timeout")
 
 
 def test_health_endpoint() -> None:
@@ -139,6 +185,91 @@ def test_upload_rejects_mismatched_file_signature() -> None:
 	assert response.status_code == 400
 
 
+def test_upload_rejects_files_over_configured_size_limit(monkeypatch) -> None:
+	monkeypatch.setattr(settings, "max_upload_size_bytes", 10)
+	response = client.post(
+		"/api/reports/upload",
+		files={"file": ("sample.pdf", b"%PDF-123456", "application/pdf")},
+	)
+
+	assert response.status_code == 413
+
+
+def test_upload_rejects_oversized_chunked_request(monkeypatch) -> None:
+	monkeypatch.setattr(settings, "max_upload_size_bytes", 10)
+	monkeypatch.setattr(upload_limits, "MAX_MULTIPART_OVERHEAD_BYTES", 5)
+	request_body = b"x" * 20
+
+	response = client.post(
+		"/api/reports/upload",
+		content=iter([request_body[:8], request_body[8:]]),
+		headers={"Content-Type": "multipart/form-data; boundary=test-boundary"},
+	)
+
+	assert response.status_code == 413
+
+
+def test_upload_rejects_pdf_over_page_limit(monkeypatch) -> None:
+	monkeypatch.setattr(settings, "max_pdf_pages", 1)
+	document = fitz.open()
+	document.new_page()
+	document.new_page()
+	pdf_data = document.tobytes()
+	document.close()
+
+	response = client.post(
+		"/api/reports/upload",
+		files={"file": ("sample.pdf", pdf_data, "application/pdf")},
+	)
+
+	assert response.status_code == 413
+
+
+def test_upload_rejects_images_over_dimension_limit(monkeypatch) -> None:
+	monkeypatch.setattr(settings, "max_image_dimension_px", 10)
+	image_buffer = BytesIO()
+	Image.new("RGB", (11, 2), "white").save(image_buffer, format="PNG")
+
+	response = client.post(
+		"/api/reports/upload",
+		files={"file": ("sample.png", image_buffer.getvalue(), "image/png")},
+	)
+
+	assert response.status_code == 413
+
+
+def test_upload_rejects_when_concurrent_upload_limit_is_reached(monkeypatch) -> None:
+	monkeypatch.setattr(upload_limits, "upload_slots", BoundedSemaphore(0))
+	document = fitz.open()
+	document.new_page()
+	pdf_data = document.tobytes()
+	document.close()
+
+	response = client.post(
+		"/api/reports/upload",
+		files={"file": ("sample.pdf", pdf_data, "application/pdf")},
+	)
+
+	assert response.status_code == 429
+	assert response.headers["retry-after"] == "1"
+
+
+def test_analyze_rejects_when_worker_pool_is_full(monkeypatch) -> None:
+	monkeypatch.setattr(report_job_service, "_slots", BoundedSemaphore(0))
+	document = fitz.open()
+	document.new_page()
+	pdf_data = document.tobytes()
+	document.close()
+
+	response = client.post(
+		"/api/reports/analyze",
+		files={"file": ("sample.pdf", pdf_data, "application/pdf")},
+	)
+
+	assert response.status_code == 429
+	assert response.headers["retry-after"] == "1"
+
+
 def test_report_analysis_extracts_and_analyzes_pdf_measurements() -> None:
 	document = fitz.open()
 	page = document.new_page()
@@ -146,13 +277,11 @@ def test_report_analysis_extracts_and_analyzes_pdf_measurements() -> None:
 	pdf_data = document.tobytes()
 	document.close()
 
-	response = client.post(
-		"/api/reports/analyze",
-		files={"file": ("water-report.pdf", pdf_data, "application/pdf")},
+	job = _submit_and_wait_for_analysis(
+		{"file": ("water-report.pdf", pdf_data, "application/pdf")}
 	)
-
-	assert response.status_code == 200
-	result = response.json()
+	assert job["status"] == "completed"
+	result = job["result"]
 	assert result["filename"] == "water-report.pdf"
 	assert result["page_count"] == 1
 	assert [item["parameter"] for item in result["extracted_parameters"]] == [
@@ -169,7 +298,9 @@ def test_report_analysis_extracts_and_analyzes_pdf_measurements() -> None:
 
 
 def test_report_analysis_ocr_extracts_and_analyzes_image_measurements(monkeypatch) -> None:
-	image_data = b"\x89PNG\r\n\x1a\nmock-image-data"
+	image_buffer = BytesIO()
+	Image.new("RGB", (200, 300), "white").save(image_buffer, format="PNG")
+	image_data = image_buffer.getvalue()
 	seen_images: list[bytes] = []
 
 	def fake_ocr(content: bytes) -> str:
@@ -180,14 +311,12 @@ def test_report_analysis_ocr_extracts_and_analyzes_image_measurements(monkeypatc
 			"Iron (as Fe)\nRaw\n0.18\nEnd\n0.05"
 		)
 
-	monkeypatch.setattr(reports_api, "tesseract_ocr", fake_ocr)
-	response = client.post(
-		"/api/reports/analyze",
-		files={"file": ("water-report.png", image_data, "image/png")},
+	monkeypatch.setattr(reports_api, "extract_image_in_process", fake_ocr)
+	job = _submit_and_wait_for_analysis(
+		{"file": ("water-report.png", image_data, "image/png")}
 	)
-
-	assert response.status_code == 200
-	result = response.json()
+	assert job["status"] == "completed"
+	result = job["result"]
 	assert seen_images == [image_data]
 	assert result["filename"] == "water-report.png"
 	assert result["content_type"] == "image/png"
@@ -204,42 +333,62 @@ def test_report_analysis_ocr_extracts_and_analyzes_image_measurements(monkeypatc
 
 
 def test_report_image_analysis_returns_service_unavailable_when_ocr_is_missing(monkeypatch) -> None:
+	image_buffer = BytesIO()
+	Image.new("RGB", (200, 300), "white").save(image_buffer, format="JPEG")
+
 	def unavailable_ocr(_: bytes) -> str:
 		raise OCRUnavailableError("Tesseract was not found.")
 
-	monkeypatch.setattr(reports_api, "tesseract_ocr", unavailable_ocr)
-	response = client.post(
-		"/api/reports/analyze",
-		files={
+	monkeypatch.setattr(reports_api, "extract_image_in_process", unavailable_ocr)
+	job = _submit_and_wait_for_analysis(
+		{
 			"file": (
 				"water-report.jpg",
-				b"\xff\xd8\xffmock-image-data",
+				image_buffer.getvalue(),
 				"image/jpeg",
 			)
-		},
+		}
 	)
 
-	assert response.status_code == 503
-	assert response.json()["detail"] == "Tesseract was not found."
+	assert job["status"] == "failed"
+	assert job["error"] == "Tesseract was not found."
+	assert job["error_code"] == 503
+
+
+def test_report_image_analysis_returns_gateway_timeout_when_ocr_times_out(monkeypatch) -> None:
+	image_buffer = BytesIO()
+	Image.new("RGB", (200, 300), "white").save(image_buffer, format="PNG")
+
+	def timeout_ocr(_: bytes) -> str:
+		raise OCRTimeoutError("Tesseract OCR exceeded its configured time limit.")
+
+	monkeypatch.setattr(reports_api, "extract_image_in_process", timeout_ocr)
+	job = _submit_and_wait_for_analysis(
+		{"file": ("water-report.png", image_buffer.getvalue(), "image/png")}
+	)
+
+	assert job["status"] == "failed"
+	assert job["error"] == "OCR processing exceeded the configured time limit."
+	assert job["error_code"] == 504
 
 
 def test_report_analysis_returns_service_unavailable_when_ocr_is_missing(monkeypatch) -> None:
 	def unavailable_ocr(_: bytes) -> dict[str, object]:
 		raise OCRUnavailableError("Tesseract was not found.")
 
-	monkeypatch.setattr(reports_api, "extract_pdf_text", unavailable_ocr)
+	monkeypatch.setattr(reports_api, "extract_pdf_in_process", unavailable_ocr)
 	document = fitz.open()
 	document.new_page()
 	pdf_data = document.tobytes()
 	document.close()
 
-	response = client.post(
-		"/api/reports/analyze",
-		files={"file": ("scanned-report.pdf", pdf_data, "application/pdf")},
+	job = _submit_and_wait_for_analysis(
+		{"file": ("scanned-report.pdf", pdf_data, "application/pdf")}
 	)
 
-	assert response.status_code == 503
-	assert response.json()["detail"] == "Tesseract was not found."
+	assert job["status"] == "failed"
+	assert job["error"] == "Tesseract was not found."
+	assert job["error_code"] == 503
 
 
 def test_report_analysis_uses_average_from_parameter_range_table() -> None:
@@ -255,13 +404,12 @@ def test_report_analysis_uses_average_from_parameter_range_table() -> None:
 	pdf_data = document.tobytes()
 	document.close()
 
-	response = client.post(
-		"/api/reports/analyze",
-		files={"file": ("range-report.pdf", pdf_data, "application/pdf")},
+	job = _submit_and_wait_for_analysis(
+		{"file": ("range-report.pdf", pdf_data, "application/pdf")}
 	)
 
-	assert response.status_code == 200
-	result = response.json()
+	assert job["status"] == "completed"
+	result = job["result"]
 	assert [(item["parameter"], item["value"]) for item in result["extracted_parameters"]] == [
 		("pH", 7.4),
 		("Turbidity", 0.4),
@@ -285,16 +433,19 @@ def test_signed_in_analysis_saves_report_to_mongodb(monkeypatch) -> None:
 	pdf_data = document.tobytes()
 	document.close()
 
-	response = client.post(
-		"/api/reports/analyze",
-		files={"file": ("water-report.pdf", pdf_data, "application/pdf")},
+	job = _submit_and_wait_for_analysis(
+		{"file": ("water-report.pdf", pdf_data, "application/pdf")}
 	)
-
-	assert response.status_code == 200
-	result = response.json()
+	assert job["status"] == "completed"
+	result = job["result"]
 	assert result["saved_to_history"] is True
 	assert collection.documents[result["report_id"]]["user_id"] == "owner-id"
 	assert collection.documents[result["report_id"]]["analysis"]["overall_score"] == 100.0
+	app.dependency_overrides[auth_api.get_optional_user] = lambda: SimpleNamespace(
+		user_id="different-owner",
+		email="other@example.com",
+	)
+	assert client.get(f"/api/reports/jobs/{job['job_id']}").status_code == 404
 
 
 def test_report_history_requires_authentication() -> None:
@@ -440,6 +591,42 @@ def test_report_history_and_detail_are_scoped_to_authenticated_user(monkeypatch)
 	assert other_response.status_code == 404
 
 
+def test_report_history_returns_page_metadata_and_paginates(monkeypatch) -> None:
+	user = SimpleNamespace(user_id="owner-id", email="owner@example.com")
+	collection = FakeReportsCollection()
+	analysis = {
+		"parameters": [],
+		"overall_score": None,
+		"score_method": "test score method",
+		"recommendations": [],
+	}
+	for day in range(1, 4):
+		collection.insert_one(
+			{
+				"_id": f"report-{day}",
+				"user_id": user.user_id,
+				"filename": f"report-{day}.pdf",
+				"page_count": 1,
+				"created_at": datetime(2026, 1, day, tzinfo=timezone.utc),
+				"analysis": analysis,
+			}
+		)
+	app.dependency_overrides[auth_api.get_current_user] = lambda: user
+	monkeypatch.setattr(reports_api, "get_reports_collection", lambda: collection)
+
+	response = client.get("/api/reports?page=2&page_size=1")
+
+	assert response.status_code == 200
+	payload = response.json()
+	assert [report["report_id"] for report in payload["reports"]] == ["report-2"]
+	assert payload["page"] == 2
+	assert payload["page_size"] == 1
+	assert payload["total"] == 3
+	assert payload["total_pages"] == 3
+	assert payload["has_previous"] is True
+	assert payload["has_next"] is True
+
+
 def test_report_analysis_rejects_pdf_without_supported_measurements() -> None:
 	document = fitz.open()
 	page = document.new_page()
@@ -447,13 +634,13 @@ def test_report_analysis_rejects_pdf_without_supported_measurements() -> None:
 	pdf_data = document.tobytes()
 	document.close()
 
-	response = client.post(
-		"/api/reports/analyze",
-		files={"file": ("report.pdf", pdf_data, "application/pdf")},
+	job = _submit_and_wait_for_analysis(
+		{"file": ("report.pdf", pdf_data, "application/pdf")}
 	)
 
-	assert response.status_code == 422
-	assert "No supported water-quality measurements" in response.json()["detail"]
+	assert job["status"] == "failed"
+	assert "No supported water-quality measurements" in job["error"]
+	assert job["error_code"] == 422
 
 
 def test_report_analysis_rejects_unreadable_images() -> None:
@@ -462,7 +649,7 @@ def test_report_analysis_rejects_unreadable_images() -> None:
 		files={"file": ("report.png", b"\x89PNG\r\n\x1a\nimage", "image/png")},
 	)
 
-	assert response.status_code == 422
+	assert response.status_code == 400
 	assert response.json()["detail"] == "The uploaded image is not readable"
 
 

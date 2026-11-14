@@ -30,6 +30,16 @@ class ReportAnalysisResponse(BaseModel):
 	saved_to_history: bool = False
 
 
+class ReportAnalysisJobResponse(BaseModel):
+	model_config = ConfigDict(extra="forbid")
+
+	job_id: str
+	status: Literal["queued", "processing", "completed", "failed"]
+	result: ReportAnalysisResponse | None = None
+	error: str | None = None
+	error_code: int | None = None
+
+
 class ReportHistoryItem(BaseModel):
 	model_config = ConfigDict(extra="forbid")
 
@@ -44,3 +54,9 @@ class ReportHistoryResponse(BaseModel):
 	model_config = ConfigDict(extra="forbid")
 
 	reports: list[ReportHistoryItem]
+	page: int = Field(ge=1)
+	page_size: int = Field(ge=1)
+	total: int = Field(ge=0)
+	total_pages: int = Field(ge=0)
+	has_next: bool
+	has_previous: bool

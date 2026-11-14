@@ -4,6 +4,7 @@ import fitz
 
 from app.config.settings import settings
 from app.extraction.ocr_engine import OCRProvider, extract_text_from_image, tesseract_ocr
+from app.extraction.upload_validation import validate_pdf_document
 
 
 def extract_pdf_text(
@@ -20,6 +21,7 @@ def extract_pdf_text(
 		raise ValueError("The uploaded data is not a readable PDF") from error
 
 	with document:
+		page_count = validate_pdf_document(document)
 		pages = []
 		for page in document:
 			text = page.get_text("text").strip()
@@ -29,7 +31,7 @@ def extract_pdf_text(
 					image_data = page.get_pixmap(dpi=settings.ocr_dpi).tobytes("png")
 				text = extract_text_from_image(image_data, ocr_provider).strip()
 			pages.append(text)
-	return {"extracted_text": "\n\n".join(pages), "page_count": len(pages), "pages": pages}
+	return {"extracted_text": "\n\n".join(pages), "page_count": page_count, "pages": pages}
 
 
 def _embedded_scan_image(document: fitz.Document, page: fitz.Page) -> bytes | None:

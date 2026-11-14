@@ -3,8 +3,6 @@
    ============================================================ */
 
 :root {
-  --font-geist-sans: "Segoe UI";
-  --font-geist-mono: Consolas;
   /* High-fidelity clinical water color system (human-grade palette) */
   --bg-0: #07131d;
   --bg-1: #0a1b27;
@@ -93,7 +91,7 @@ body {
   display: flex;
   flex-direction: column;
   color: var(--text);
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   background-color: var(--bg-0);
   background-image: url("/images/water-bg.svg");

@@ -352,6 +352,43 @@
   font-size: 0.88rem;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.paginationButton {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: rgba(56, 189, 248, 0.08);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: var(--primary);
+}
+
+.paginationButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.paginationStatus {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Loading skeleton */
 .loadingState {
   display: flex;
